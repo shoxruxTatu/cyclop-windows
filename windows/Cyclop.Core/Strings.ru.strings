@@ -1,0 +1,241 @@
+/* Cyclop — русский. Ключи — английский текст, поэтому строка без перевода
+   просто останется английской, а не превратится в идентификатор. */
+
+/* Вкладки */
+"Music" = "Музыка";
+"Shelf" = "Полка";
+"Clipboard" = "Буфер";
+"Snippets" = "Заготовки";
+"Calendar" = "Календарь";
+"Translate" = "Перевод";
+"Currency" = "Валюта";
+"Settings" = "Настройки";
+
+/* Меню-бар */
+"Open Panel" = "Открыть панель";
+"Quit" = "Выйти";
+
+/* Вкладка настроек */
+"General" = "Общее";
+"Launch at Login" = "Запускать при входе";
+"Show Menu Bar Icon" = "Показывать иконку в меню-баре";
+"Open Delay" = "Задержка открытия";
+"%d ms" = "%d мс";
+"Show in Panel" = "Показывать в панели";
+"Displays" = "Дисплеи";
+"Show on All Displays" = "Показывать на всех дисплеях";
+"Full-Height Notch Without a Cutout" = "Высокая чёлка на экранах без выреза";
+
+"Screenshots" = "Скриншоты";
+"Save Clipboard Screenshots" = "Сохранять скриншоты из буфера";
+"Watch Screenshots Folder" = "Отслеживать папку снимков";
+"Choose Screenshots Folder" = "Выбор папки для снимков";
+"Cyclop will watch this folder for new screenshots and add them to the shelf." = "Cyclop будет следить за этой папкой и класть новые снимки на полку.";
+"Watch" = "Следить";
+"Show Screenshots Folder" = "Показать папку скриншотов";
+"Clear Screenshots Folder" = "Очистить папку снимков";
+"Clear Screenshots Folder (%@)" = "Очистить папку снимков (%@)";
+"Show Snippets File" = "Показать файл заготовок";
+
+"Configuration" = "Конфигурация";
+"Show Config File" = "Показать файл конфигурации";
+"config.json is broken — click to open; nothing is overwritten" = "config.json не читается — нажми, чтобы открыть; поверх ничего не пишется";
+
+"Cyclop" = "Cyclop";
+"Quit Cyclop" = "Выйти из Cyclop";
+
+/* Полка */
+"Selected: %d" = "Выбрано: %d";
+"Deselect" = "Снять выбор";
+"Clear" = "Очистить";
+"Copy" = "Копировать";
+"Open" = "Открыть";
+"Show in Finder" = "Показать в Finder";
+"Remove from Shelf" = "Убрать с полки";
+
+/* Музыка */
+"No artwork" = "Обложки нет";
+"Nothing is playing" = "Ничего не играет";
+
+/* Заготовки */
+"Add a snippet" = "Добавить заготовку";
+"Name" = "Название";
+"Text" = "Текст";
+"Delete" = "Удалить";
+"Nothing here yet — add with +" = "Пока пусто — добавь через +";
+"snippets.json is broken — click to open; nothing is overwritten" = "snippets.json не читается — нажми, чтобы открыть; поверх ничего не пишется";
+
+/* Заметки */
+"Notes" = "Заметки";
+"New Note" = "Новая заметка";
+"Empty note" = "Пустая заметка";
+"Jot something down…" = "Набросай что-нибудь…";
+
+/* Перевод */
+"Translation Languages…" = "Языки перевода…";
+"Retry" = "Повторить";
+"The %@ → %@ language pack is not installed." = "Не скачан языковой пакет %@ → %@.";
+"macOS does not translate this pair of languages." = "macOS не переводит эту пару языков.";
+
+/* Валюта */
+"Search currency" = "Поиск валюты";
+"Swap currencies" = "Поменять валюты";
+"No currencies match" = "Ничего не найдено";
+
+/* Календарь */
+"Join" = "Подключиться";
+"Join · %@" = "Подключиться · %@";
+"No other meetings this week" = "Других встреч на неделе нет";
+"See your next meetings" = "Показать ближайшие встречи";
+"Cyclop needs access to Calendar. It is the only permission\nthe app asks for, and only for this tab." = "Нужен доступ к Календарю. Это единственное разрешение,\nкоторое просит Cyclop — и только для этой вкладки.";
+"Continue" = "Продолжить";
+"Calendar access is off" = "Доступ к Календарю закрыт";
+"Settings → Privacy → Calendars" = "Настройки → Конфиденциальность → Календари";
+"No more meetings" = "Встреч больше нет";
+"Nothing on the calendar for the next day" = "В ближайшие сутки календарь пуст";
+"Untitled" = "Без названия";
+"Calendars" = "Календари";
+"Done" = "Готово";
+
+/* Отсчёт со строчной: прописную ставит то место, где строится подпись.
+   Сокращения намеренные: в шапку панели помещается «через 12 мин», но
+   не полное слово с падежом, а сокращение не склоняется ни в каком языке. */
+"now" = "идёт сейчас";
+"any moment" = "вот-вот";
+"tomorrow" = "завтра";
+"in %d min" = "через %d мин";
+"in %d h" = "через %d ч";
+"in %d h %d min" = "через %d ч %d мин";
+"in %d d" = "через %d дн";
+
+/* Сохранённые снимки. Ключ — сам формат даты, чтобы язык мог переставить части
+   в своём порядке. */
+"Screenshot" = "Снимок";
+"yyyy-MM-dd 'at' HH.mm.ss" = "yyyy-MM-dd 'в' HH.mm.ss";
+
+/* Режим приватности: панель закрывает содержимое полем из точек. */
+"Hide Contents" = "Скрывать содержимое";
+"Hidden" = "Скрыто";
+"Show" = "Показать";
+"Hide" = "Скрыть";
+"All" = "Всё";
+
+"Teleprompter" = "Телесуфлёр";
+"Paste the script here" = "Вставьте сюда сценарий";
+"Ready" = "Готово";
+"Done" = "Готово";
+"Utilities" = "Утилиты";
+"Lock Keyboard" = "Заблокировать клавиатуру";
+"Wipe the keys and the screen. Hold Esc or − for %d s to\nunlock; it also unlocks by itself after a minute" = "Протри клавиши и экран. Чтобы разблокировать — держи Esc\nили − %d с; само снимется через минуту";
+"Allow in Settings" = "Разрешить в настройках";
+"Input is protected" = "Ввод защищён";
+"Could not take over input" = "Не удалось перехватить ввод";
+"Still unlocking" = "Ещё разблокируется";
+"Lock ended early" = "Блокировка прервалась";
+"An app turned on secure keyboard entry, so keys stopped\nreaching the lock. It ended instead of pretending" = "Приложение включило защищённый ввод, и нажатия перестали\nдоходить до блокировки. Она снялась, а не сделала вид";
+"The previous lock is still being taken down.\nPress again in a moment" = "Предыдущая блокировка ещё снимается.\nНажми снова через мгновение";
+"An app is holding secure keyboard entry — a password field,\na password manager, a terminal. Close it and press again" = "Какое-то приложение держит защищённый ввод — поле пароля,\nменеджер паролей, терминал. Закрой его и нажми снова";
+"The system refused the event tap. Re-granting Accessibility\nusually fixes it — the permission is tied to the app's signature" = "Система не дала перехват событий. Обычно помогает выдать\nУниверсальный доступ заново — он привязан к подписи сборки";
+"Cyclop needs Accessibility to swallow keys and clicks.\nSystem Settings → Privacy & Security → Accessibility" = "Нужен Универсальный доступ, чтобы гасить нажатия и клики.\nНастройки → Конфиденциальность → Универсальный доступ";
+"Keyboard and trackpad are locked" = "Клавиатура и трекпад заблокированы";
+"Hold Esc or − for %d s" = "Держи Esc или − %d с";
+"Unlocks by itself in %d s" = "Само снимется через %d с";
+
+/* ——— Windows ———
+   Строки, которых нет в macOS-версии: другие системные пути, iCal-ссылки
+   вместо EventKit, онлайн-перевод вместо встроенного. */
+"Show Tray Icon" = "Показывать значок в трее";
+"Show in Explorer" = "Показать в проводнике";
+"Show Teleprompter Script" = "Показать файл сценария суфлёра";
+"Files" = "Файлы";
+"Add" = "Добавить";
+"Save" = "Сохранить";
+"Cancel" = "Отмена";
+"Edit" = "Изменить";
+"Search" = "Поиск";
+"Copied" = "Скопировано";
+"Loading…" = "Загрузка…";
+"Today" = "Сегодня";
+"Tomorrow" = "Завтра";
+"Open Settings" = "Открыть настройки";
+"Name (optional)" = "Название (необязательно)";
+"Move Up" = "Выше";
+"Move Down" = "Ниже";
+"Move to Top" = "В начало";
+"Media Player" = "Медиаплеер";
+"Unknown" = "Без названия";
+"Back to the start" = "В начало";
+"B" = "Б";
+"KB" = "КБ";
+"MB" = "МБ";
+"GB" = "ГБ";
+
+"Drop files here" = "Перетащите файлы сюда";
+"They stay where they are — the shelf only holds a reference.\nWin+Shift+S screenshots land here on their own." = "Файлы остаются на месте — полка хранит только ссылку.\nСкриншоты по Win+Shift+S попадают сюда сами.";
+"Ctrl-click to pick several; drag them out together" = "Ctrl+клик — выбрать несколько и перетащить вместе";
+
+"Nothing copied yet" = "Пока ничего не скопировано";
+"The last %d copies show up here. Click one to put it back." = "Здесь последние %d копирований. Клик возвращает запись в буфер.";
+
+"English" = "Английский";
+"Russian" = "Русский";
+"Type or paste text" = "Введите или вставьте текст";
+"Translating…" = "Перевожу…";
+"Online, via Google Translate — the text is sent to translate it" = "Онлайн, через Google Переводчик — текст отправляется на перевод";
+"No connection to the translation service." = "Нет связи с сервисом перевода.";
+
+"Add your calendar's iCal link in Settings — Google Calendar: Settings → your calendar → Secret address in iCal format; Outlook: Settings → Shared calendars → Publish." = "Добавьте iCal-ссылку календаря в настройках. Google Календарь: Настройки → ваш календарь → Закрытый адрес в формате iCal; Outlook: Параметры → Общие календари → Опубликовать.";
+"Google: calendar settings → Secret address in iCal format. Outlook: Settings → Shared calendars → Publish → ICS." = "Google: настройки календаря → Закрытый адрес в формате iCal. Outlook: Параметры → Общие календари → Опубликовать → ICS.";
+"iCal link (https://… .ics)" = "iCal-ссылка (https://… .ics)";
+"This link is not an iCal calendar." = "По этой ссылке не iCal-календарь.";
+
+"Ctrl+Alt+Del always gets through — it belongs to Windows." = "Ctrl+Alt+Del проходит всегда — это сочетание принадлежит Windows.";
+"Windows refused the input hook. Press again in a moment." = "Windows не дала перехватить ввод. Нажмите ещё раз через мгновение.";
+
+/* О программе */
+"About" = "О программе";
+"Windows version" = "Windows-версия";
+"Support the author" = "Поддержать автора";
+"Card number copied" = "Номер карты скопирован";
+"Based on Cyclop for macOS" = "Основано на Cyclop для macOS";
+
+/* Скриншоты */
+"Screenshot of an Area" = "Скриншот области";
+"Screenshot of the Screen" = "Скриншот экрана";
+"Left button copies the area, right button opens the editor" = "Левой кнопкой — сразу в буфер, правой — в редактор";
+"The whole display, straight to the clipboard and the shelf" = "Весь экран — сразу в буфер и на полку";
+"Hold Esc or − for %d s to unlock; it unlocks by itself after a minute. Ctrl+Alt+Del always gets through." = "Чтобы снять — держите Esc или − %d с; само снимется через минуту. Ctrl+Alt+Del проходит всегда.";
+"Left button — copy the area · right button — edit it · Esc — cancel" = "Левая кнопка — скопировать область · правая — редактировать · Esc — отмена";
+"Pen" = "Карандаш";
+"Line" = "Линия";
+"Arrow" = "Стрелка";
+"Rectangle" = "Прямоугольник";
+"Marker" = "Маркер";
+"Colour" = "Цвет";
+"Undo" = "Отменить";
+"Close" = "Закрыть";
+"Press a shortcut…" = "Нажмите сочетание…";
+"Off" = "Выключено";
+"taken" = "занято";
+"Add Ctrl, Alt or Win" = "Добавьте Ctrl, Alt или Win";
+"Click and press a new shortcut. Backspace turns it off." = "Нажмите и введите новое сочетание. Backspace — выключить.";
+"Shortcut %@ is taken by another app. Pick another in Settings → Screenshots." = "Сочетание %@ занято другой программой. Выберите другое в Настройках → Скриншоты.";
+"Open %@" = "Открыть %@";
+
+/* Обновления */
+"Updates" = "Обновления";
+"Version %@" = "Версия %@";
+"Checking…" = "Проверяю…";
+"Cyclop is up to date" = "Установлена последняя версия";
+"Version %@ is available" = "Доступна версия %@";
+"Could not reach the update server" = "Сервер обновлений не отвечает";
+"Downloading %@…" = "Скачиваю %@…";
+"Update failed: %@" = "Обновление не удалось: %@";
+"Updates are off in this build" = "В этой сборке обновления выключены";
+"Install %@" = "Установить %@";
+"Check Now" = "Проверить";
+"Install Updates Automatically" = "Обновлять автоматически";
+"Anonymous Usage Count" = "Анонимный подсчёт пользователей";
+"Once in a while Cyclop asks the update server for the newest version. With the count on, it adds a random install number, so the author can see how many people use Cyclop. No name, files or contents are sent." = "Время от времени Cyclop спрашивает сервер обновлений о новой версии. Если подсчёт включён, к запросу добавляется случайный номер установки — так автор видит, сколько людей пользуется Cyclop. Ни имени, ни файлов, ни содержимого не отправляется.";
+"Cyclop has been updated to %@." = "Cyclop обновлён до версии %@.";
+"Cyclop checks for updates and anonymously counts how many people use it. No personal data is sent. Turn it off in Settings → Updates." = "Cyclop проверяет обновления и анонимно считает число пользователей. Личные данные не отправляются. Выключить: Настройки → Обновления.";

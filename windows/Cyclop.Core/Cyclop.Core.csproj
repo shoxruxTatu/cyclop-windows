@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Everything that does not need Windows: the stores, the file formats, the
+       calendar feed parser, the converters. Kept apart so it builds and is
+       tested anywhere, including on the Mac the macOS version is made on. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Cyclop</RootNamespace>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Strings.ru.strings" LogicalName="Cyclop.Strings.ru.strings" WithCulture="false" />
+    <InternalsVisibleTo Include="Cyclop.Core.Tests" />
+  </ItemGroup>
+
+</Project>

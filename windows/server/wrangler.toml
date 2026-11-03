@@ -1,0 +1,19 @@
+# Cyclop for Windows — update and usage-count server.
+# Setup steps: windows/RELEASING.md.
+name = "cyclop-updates"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+# The GitHub repository the Windows releases are published in: "owner/name".
+GITHUB_REPO = "OWNER/REPO"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cyclop-stats"
+# Printed by `npx wrangler d1 create cyclop-stats`.
+database_id = "00000000-0000-0000-0000-000000000000"
+
+# Secrets, set with `npx wrangler secret put NAME`, never written here:
+#   STATS_PASSWORD — the password of the /stats page
+#   GITHUB_TOKEN   — optional; raises GitHub's API limit

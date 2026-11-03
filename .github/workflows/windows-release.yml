@@ -1,0 +1,74 @@
+name: windows-release
+
+# Выпуск Windows-версии по метке win-vX.Y.Z (например, win-v0.9.1).
+# Отдельный префикс, а не v*: по меткам v* выпускается macOS-версия
+# (release.yml), и одна метка не должна запускать оба выпуска.
+#
+# Собирает exe для x64 и arm64 с версией из метки и адресом сервера
+# обновлений из переменной репозитория UPDATE_SERVER, считает SHA-256 и
+# публикует релиз. Сервер обновлений (windows/server) находит его сам — по
+# метке и именам файлов, так что после релиза программы у пользователей
+# обновятся в течение нескольких часов.
+on:
+  push:
+    tags: ['win-v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Сервер обновлений указан
+        # Без адреса программы не смогут ни обновиться, ни посчитаться —
+        # такой релиз лучше не выпускать вовсе.
+        shell: pwsh
+        env:
+          UPDATE_SERVER: ${{ vars.UPDATE_SERVER }}
+        run: |
+          if (-not $env:UPDATE_SERVER.StartsWith('https://')) {
+            Write-Error 'Задайте переменную репозитория UPDATE_SERVER (Settings → Secrets and variables → Actions → Variables), см. windows/RELEASING.md'
+            exit 1
+          }
+
+      - name: Ключи перевода совпадают с кодом
+        run: python windows/check-strings.py
+
+      - name: Тесты ядра
+        run: dotnet test windows/Cyclop.Core.Tests -c Release
+
+      - name: Сборка exe
+        shell: pwsh
+        env:
+          UPDATE_SERVER: ${{ vars.UPDATE_SERVER }}
+        run: |
+          $version = '${{ github.ref_name }}'.Substring(5)
+          foreach ($arch in 'x64', 'arm64') {
+            dotnet publish windows/Cyclop -c Release -r "win-$arch" --self-contained true `
+              -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+              -p:EnableCompressionInSingleFile=true -p:DebugType=none `
+              "-p:Version=$version" "-p:UpdateServer=$env:UPDATE_SERVER" -o "out/$arch"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $name = "Cyclop-win-$arch.exe"
+            Copy-Item "out/$arch/Cyclop.exe" $name
+            $hash = (Get-FileHash $name -Algorithm SHA256).Hash.ToLower()
+            Set-Content -Path "$name.sha256" -Value "$hash  $name" -NoNewline -Encoding ascii
+          }
+
+      - name: Релиз
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $notes = 'windows/releases/${{ github.ref_name }}.md'
+          $notesArgs = if (Test-Path $notes) { @('--notes-file', $notes) } else { @('--generate-notes') }
+          gh release create '${{ github.ref_name }}' `
+            Cyclop-win-x64.exe Cyclop-win-x64.exe.sha256 Cyclop-win-arm64.exe Cyclop-win-arm64.exe.sha256 `
+            --title "Cyclop для Windows $('${{ github.ref_name }}'.Substring(5))" @notesArgs

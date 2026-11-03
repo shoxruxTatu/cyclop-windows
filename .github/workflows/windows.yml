@@ -1,0 +1,46 @@
+name: windows
+
+# Windows-версия живёт в windows/ и собирается отдельно от macOS-приложения:
+# своё окружение (windows-latest, .NET 8), свои тесты, свой артефакт.
+on:
+  push:
+    branches: [main]
+    paths: ['windows/**', '.github/workflows/windows.yml']
+  pull_request:
+    branches: [main]
+    paths: ['windows/**', '.github/workflows/windows.yml']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Ключи перевода совпадают с кодом
+        # Первым шагом: секунды, а не минуты сборки.
+        run: python windows/check-strings.py
+
+      - name: Тесты ядра
+        run: dotnet test windows/Cyclop.Core.Tests -c Release
+
+      - name: Сборка exe (x64 и arm64)
+        # Один самодостаточный файл: ставить .NET пользователю не нужно.
+        shell: pwsh
+        run: |
+          foreach ($rid in 'win-x64', 'win-arm64') {
+            dotnet publish windows/Cyclop -c Release -r $rid --self-contained true `
+              -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+              -p:EnableCompressionInSingleFile=true -p:DebugType=none `
+              -o "windows/dist/$rid"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cyclop-windows
+          path: windows/dist/
