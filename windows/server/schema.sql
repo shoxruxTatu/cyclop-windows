@@ -17,3 +17,10 @@ CREATE TABLE IF NOT EXISTS downloads (
   n    INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (day, arch)
 );
+
+-- The last release lookup that worked, per platform — used when GitHub does
+-- not answer a lookup, so a download button always gets a file.
+CREATE TABLE IF NOT EXISTS known (
+  name  TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);

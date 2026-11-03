@@ -75,7 +75,8 @@ async function check(url, env, ctx) {
       ).bind(id.toLowerCase(), today(), version, arch, OS.test(os) ? os : "").run()
     );
   }
-  return json(await latest(env, ctx, arch));
+  const { source, ...answer } = await latest(env, ctx, arch);
+  return json(answer);
 }
 
 /// The newest release for one architecture, cached for ten minutes.
@@ -87,19 +88,41 @@ async function check(url, env, ctx) {
 /// fallback for when the newest release is not a Windows one.
 async function latest(env, ctx, arch) {
   const cache = caches.default;
-  const key = new Request(`https://cache.cyclop/v2/latest/${env.GITHUB_REPO}/${arch}`);
+  const key = new Request(`https://cache.cyclop/v3/latest/${env.GITHUB_REPO}/${arch}`);
   const hit = await cache.match(key);
   if (hit) return hit.json();
 
   let answer = { version: null };
   const name = `Cyclop-win-${arch}.exe`;
-  const tag = await latestTag(env.GITHUB_REPO);
-  if (tag && tag.startsWith("win-v")) {
-    answer = await fromTag(env.GITHUB_REPO, tag, name);
-  } else {
-    answer = await fromApi(env, name);
+  try {
+    const tag = await latestTag(env.GITHUB_REPO);
+    answer = tag && tag.startsWith("win-v") ? await fromTag(env.GITHUB_REPO, tag, name) : { version: null };
+    if (!answer.url) answer = await fromApi(env, name);
+  } catch (e) {
+    console.log(`lookup ${arch} failed: ${e}`);
   }
+  answer = await settle(env, ctx, `win-${arch}`, answer);
   remember(ctx, key, answer);
+  return answer;
+}
+
+/// GitHub does not always answer every Cloudflare location the same — one
+/// can be throttled while the next is fine. The last answer that worked is
+/// kept in the database, and used whenever a fresh lookup comes back empty,
+/// so a button never sends anyone to a GitHub page instead of a file.
+async function settle(env, ctx, name, answer) {
+  try {
+    if (answer.url) {
+      ctx.waitUntil(env.DB.prepare(
+        "INSERT INTO known (name, value) VALUES (?1, ?2) ON CONFLICT (name) DO UPDATE SET value = excluded.value"
+      ).bind(name, JSON.stringify(answer)).run());
+      return { ...answer, source: "github" };
+    }
+    const row = await env.DB.prepare("SELECT value FROM known WHERE name = ?1").bind(name).first();
+    if (row) return { ...JSON.parse(row.value), source: "known" };
+  } catch (e) {
+    console.log(`known ${name}: ${e}`);
+  }
   return answer;
 }
 
@@ -146,11 +169,21 @@ async function download(url, env, ctx) {
   const platform = wanted === "mac" ? "mac" : ARCHES.includes(wanted) ? wanted : "x64";
   const target = platform === "mac" ? await latestMac(env, ctx) : await latest(env, ctx, platform);
   if (!target.url) {
-    const repo = platform === "mac" ? MAC_REPO : env.GITHUB_REPO;
-    return Response.redirect(`https://github.com/${repo}/releases`, 302);
+    // Nothing has ever been published for this platform.
+    return Response.redirect(`https://github.com/${env.GITHUB_REPO}/releases`, 302);
   }
-  const upstream = await fetch(target.url, { headers: { "user-agent": "cyclop-updates" } });
-  if (!upstream.ok || !upstream.body) return Response.redirect(target.url, 302);
+  let upstream = null;
+  try {
+    upstream = await fetch(target.url, { headers: { "user-agent": "cyclop-updates" } });
+  } catch (e) {
+    console.log(`download ${platform} failed: ${e}`);
+  }
+  // Could not pass the file through: the browser fetches it from GitHub
+  // itself — still a download, not a page.
+  if (!upstream || !upstream.ok || !upstream.body) {
+    console.log(`download ${platform}: upstream ${upstream && upstream.status}, redirecting to the file`);
+    return Response.redirect(target.url, 302);
+  }
   ctx.waitUntil(
     env.DB.prepare(
       "INSERT INTO downloads (day, arch, n) VALUES (?1, ?2, 1) ON CONFLICT (day, arch) DO UPDATE SET n = n + 1"
@@ -162,6 +195,7 @@ async function download(url, env, ctx) {
     "content-disposition": `attachment; filename="${name}"`,
     "cache-control": "no-store",
     "x-content-type-options": "nosniff",
+    "x-cyclop-source": target.source || "cache",
   };
   const length = upstream.headers.get("content-length");
   if (length) headers["content-length"] = length;
@@ -170,19 +204,38 @@ async function download(url, env, ctx) {
 }
 
 /// The newest .dmg of the original macOS app, found the same way: its tag
-/// from the "latest" redirect, the file named after the version.
+/// from the "latest" redirect, the file named after the version. No probe of
+/// the file first — the download itself is the check, and GitHub's storage
+/// does not answer a bare HEAD the same way everywhere.
+const MAC_FALLBACK = {
+  version: "0.8.3",
+  url: "https://github.com/akalikbergenov/cyclop/releases/download/v0.8.3/Cyclop-0.8.3.dmg",
+};
+
 async function latestMac(env, ctx) {
-  const key = new Request(`https://cache.cyclop/v2/latest/${MAC_REPO}/mac`);
+  const key = new Request(`https://cache.cyclop/v3/latest/${MAC_REPO}/mac`);
   const hit = await caches.default.match(key);
   if (hit) return hit.json();
   let answer = { version: null };
-  const tag = await latestTag(MAC_REPO);
-  if (tag) {
-    const version = tag.replace(/^v/, "");
-    const url = `https://github.com/${MAC_REPO}/releases/download/${tag}/Cyclop-${version}.dmg`;
-    const head = await fetch(url, { method: "HEAD", headers: { "user-agent": "cyclop-updates" } });
-    if (head.ok) answer = { version, url };
+  try {
+    const tag = await latestTag(MAC_REPO);
+    if (tag) {
+      const version = tag.replace(/^v/, "");
+      answer = { version, url: `https://github.com/${MAC_REPO}/releases/download/${tag}/Cyclop-${version}.dmg` };
+    } else {
+      const headers = { "user-agent": "cyclop-updates", accept: "application/vnd.github+json" };
+      const response = await fetch(`https://api.github.com/repos/${MAC_REPO}/releases/latest`, { headers });
+      if (response.ok) {
+        const release = await response.json();
+        const dmg = (release.assets || []).find((a) => a.name.endsWith(".dmg"));
+        if (dmg) answer = { version: release.tag_name.replace(/^v/, ""), url: dmg.browser_download_url };
+      }
+    }
+  } catch (e) {
+    console.log(`lookup mac failed: ${e}`);
   }
+  answer = await settle(env, ctx, "mac", answer);
+  if (!answer.url) answer = { ...MAC_FALLBACK, source: "built-in" };
   remember(ctx, key, answer);
   return answer;
 }
