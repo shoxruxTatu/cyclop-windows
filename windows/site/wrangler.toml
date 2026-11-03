@@ -1,0 +1,7 @@
+# The download site — static files only, served by Cloudflare.
+# Deploy from this folder: npx wrangler deploy
+name = "cyclop"
+compatibility_date = "2025-01-01"
+
+[assets]
+directory = "./public"

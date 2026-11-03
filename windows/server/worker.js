@@ -6,6 +6,11 @@
 //   random number the app made on first launch; no IP or anything else about
 //   the user is stored. Without an id (count switched off) nothing is stored.
 //
+// GET /download?arch=x64|arm64
+//   Redirects to the newest exe and counts the download (per day and
+//   architecture, nothing else). The website's download button points here, so
+//   it never needs editing when a version comes out.
+//
 // GET /stats
 //   Users per day, week and month, versions, new installs. Behind a password
 //   (the STATS_PASSWORD secret); the browser asks for it — any user name.
@@ -25,6 +30,7 @@ export default {
     const url = new URL(request.url);
     try {
       if (url.pathname === "/v1/check") return await check(url, env, ctx);
+      if (url.pathname === "/download") return await download(url, env, ctx);
       if (url.pathname === "/stats") return await stats(request, env);
       return new Response("Cyclop", { status: 404 });
     } catch (e) {
@@ -36,7 +42,8 @@ export default {
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+    // Readable from the website, which shows the current version.
+    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "access-control-allow-origin": "*" },
   });
 }
 
@@ -107,6 +114,25 @@ async function latest(env, ctx, arch) {
   return answer;
 }
 
+// MARK: - Download
+
+async function download(url, env, ctx) {
+  const arch = ARCHES.includes(url.searchParams.get("arch")) ? url.searchParams.get("arch") : "x64";
+  const release = await latest(env, ctx, arch);
+  if (!release.url) {
+    return Response.redirect(`https://github.com/${env.GITHUB_REPO}/releases`, 302);
+  }
+  ctx.waitUntil(
+    env.DB.prepare(
+      "INSERT INTO downloads (day, arch, n) VALUES (?1, ?2, 1) ON CONFLICT (day, arch) DO UPDATE SET n = n + 1"
+    ).bind(today(), arch).run()
+  );
+  return new Response(null, {
+    status: 302,
+    headers: { location: release.url, "cache-control": "no-store", "access-control-allow-origin": "*" },
+  });
+}
+
 // MARK: - Stats
 
 function authorized(request, env) {
@@ -147,10 +173,13 @@ async function stats(request, env) {
   const versions = await all(
     "SELECT version, COUNT(*) AS n FROM (SELECT version, ROW_NUMBER() OVER (PARTITION BY id ORDER BY day DESC) AS rn " +
     "FROM pings WHERE day >= ?1) WHERE rn = 1 GROUP BY version ORDER BY n DESC", daysAgo(6));
+  const downloads = await all(
+    "SELECT day, SUM(n) AS n FROM downloads WHERE day >= ?1 GROUP BY day ORDER BY day", daysAgo(29));
+  const downloadsTotal = (await one("SELECT SUM(n) AS n FROM downloads")).n || 0;
   const arches = await all(
     "SELECT arch, COUNT(DISTINCT id) AS n FROM pings WHERE day >= ?1 GROUP BY arch ORDER BY n DESC", daysAgo(6));
 
-  return new Response(page({ dau, wau, mau, total, daily, fresh, versions, arches }), {
+  return new Response(page({ dau, wau, mau, total, daily, fresh, versions, arches, downloads, downloadsTotal }), {
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
   });
 }
@@ -208,9 +237,11 @@ function page(s) {
   <div class="tile"><span class="muted">За 7 дней</span><b>${s.wau}</b></div>
   <div class="tile"><span class="muted">За 30 дней</span><b>${s.mau}</b></div>
   <div class="tile"><span class="muted">Всего</span><b>${s.total}</b></div>
+  <div class="tile"><span class="muted">Скачиваний с сайта</span><b>${s.downloadsTotal}</b></div>
 </div>
 ${bars(s.daily, "Пользователи по дням")}
 ${bars(s.fresh, "Новые установки по дням")}
+${bars(s.downloads, "Скачивания с сайта по дням")}
 <div class="grid2" style="margin-top:12px">
 ${table(s.versions, "version", "Версии за 7 дней")}
 ${table(s.arches, "arch", "Архитектура за 7 дней")}

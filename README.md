@@ -9,7 +9,10 @@ Windows 10 (2004+) и 11, x64 и ARM. Один файл, без установк
 
 ## Скачать
 
-Последняя версия — на странице
+**Сайт: https://cyclop.cyclop-updates.workers.dev** — кнопка «Скачать»
+сама выберет нужную версию.
+
+Или со страницы
 [релизов](https://github.com/shoxruxTatu/cyclop-windows/releases):
 `Cyclop-win-x64.exe` для обычных ПК, `Cyclop-win-arm64.exe` для Windows на
 ARM. Дальше программа обновляется сама.

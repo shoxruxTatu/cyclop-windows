@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cyclop для Windows — панель вверху экрана</title>
+<meta name="description" content="Бесплатная панель вверху экрана Windows: музыка, полка файлов, история буфера обмена, скриншоты, заметки, календарь, перевод и курсы валют.">
+<meta property="og:title" content="Cyclop для Windows">
+<meta property="og:description" content="Музыка, файлы, буфер обмена и скриншоты — в одном движении курсора. Бесплатно.">
+<meta property="og:image" content="icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050506;
+    --bg2: #0d0d10;
+    --card: #121216;
+    --line: rgba(255,255,255,.08);
+    --text: #f4f4f6;
+    --muted: rgba(244,244,246,.62);
+    --faint: rgba(244,244,246,.38);
+    --accent: #0a84ff;
+    --accent2: #5e5ce6;
+    --green: #30d158;
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.55 Inter, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  a { color: inherit; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+
+  /* The strip that gives the app its name: always at the top centre. */
+  .strip {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 150px; height: 6px; background: #000; border-radius: 0 0 4px 4px; z-index: 50;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.06);
+  }
+
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -.01em; text-decoration: none; }
+  .brand img { width: 30px; height: 30px; border-radius: 8px; }
+  .navlinks { display: flex; align-items: center; gap: 22px; font-size: 14px; color: var(--muted); }
+  .navlinks a { text-decoration: none; } .navlinks a:hover { color: var(--text); }
+  .lang { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+  .lang button { background: none; border: 0; color: var(--faint); font: inherit; font-size: 12px; font-weight: 600; padding: 5px 10px; cursor: pointer; }
+  .lang button.on { background: rgba(255,255,255,.1); color: var(--text); }
+
+  /* Hero */
+  .hero { position: relative; text-align: center; padding: 56px 0 30px; }
+  .glow { position: absolute; inset: -120px 0 auto; height: 620px; z-index: -1; pointer-events: none;
+    background: radial-gradient(600px 300px at 50% 30%, rgba(10,132,255,.22), transparent 70%),
+                radial-gradient(500px 260px at 30% 60%, rgba(94,92,230,.16), transparent 70%); }
+  .badge { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted);
+    border: 1px solid var(--line); background: rgba(255,255,255,.03); padding: 6px 12px; border-radius: 999px; }
+  .badge i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); }
+  h1 { font-size: clamp(38px, 6.4vw, 72px); line-height: 1.04; letter-spacing: -.035em; margin: 22px auto 18px; max-width: 900px; font-weight: 800; }
+  h1 em { font-style: normal; background: linear-gradient(90deg, #6ab4ff, #a78bfa); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lead { font-size: clamp(17px, 2.1vw, 20px); color: var(--muted); max-width: 640px; margin: 0 auto 32px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 600; border-radius: 14px; padding: 15px 24px; transition: transform .15s, box-shadow .15s, background .15s; }
+  .btn:active { transform: scale(.98); }
+  .btn.primary { background: linear-gradient(180deg, #2f97ff, #0a6fe0); color: #fff; box-shadow: 0 10px 30px rgba(10,132,255,.35), inset 0 1px 0 rgba(255,255,255,.25); font-size: 17px; }
+  .btn.primary:hover { box-shadow: 0 14px 40px rgba(10,132,255,.5), inset 0 1px 0 rgba(255,255,255,.25); transform: translateY(-1px); }
+  .btn.ghost { border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--text); }
+  .btn.ghost:hover { background: rgba(255,255,255,.07); }
+  .btn svg { width: 20px; height: 20px; }
+  .meta { margin-top: 14px; font-size: 13px; color: var(--faint); }
+  .meta a { color: var(--muted); }
+  .notwin { display: none; margin: 16px auto 0; max-width: 520px; font-size: 14px; color: var(--muted); background: rgba(255,214,10,.08); border: 1px solid rgba(255,214,10,.25); padding: 10px 14px; border-radius: 12px; }
+
+  /* The live demo: a desktop with the strip, unfolding into the panel. */
+  .stage { margin: 54px auto 0; max-width: 980px; aspect-ratio: 16 / 9.2; border-radius: 22px; position: relative; overflow: hidden;
+    border: 1px solid var(--line); box-shadow: 0 40px 120px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02);
+    background: radial-gradient(1200px 600px at 20% 110%, #1b3a8a 0%, transparent 60%),
+                radial-gradient(900px 500px at 90% 0%, #4a2a8a 0%, transparent 55%),
+                linear-gradient(160deg, #0f1730, #191233 60%, #0b0f22); }
+  .stage .win { position: absolute; left: 7%; top: 28%; width: 46%; height: 58%; border-radius: 10px;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(6px); }
+  .stage .win::before { content: ""; position: absolute; inset: 0 0 auto; height: 28px; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .stage .win.b { left: 48%; top: 40%; width: 44%; height: 50%; background: rgba(255,255,255,.045); }
+  .stage .taskbar { position: absolute; left: 0; right: 0; bottom: 0; height: 7.5%; background: rgba(10,10,14,.78); border-top: 1px solid rgba(255,255,255,.06);
+    display: flex; justify-content: center; align-items: center; gap: 1.1%; }
+  .stage .taskbar span { width: 2.2%; aspect-ratio: 1; border-radius: 22%; background: rgba(255,255,255,.18); }
+  .stage .taskbar span:first-child { background: linear-gradient(135deg, #39f, #5ce); }
+  .cursor { position: absolute; width: 2.1%; aspect-ratio: .7; z-index: 6; transition: left 1s cubic-bezier(.4,.1,.2,1), top 1s cubic-bezier(.4,.1,.2,1);
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
+
+  .panel { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 15.5%; height: 1.3%;
+    background: #000; border-radius: 0 0 6px 6px; overflow: hidden; z-index: 5;
+    transition: width .5s cubic-bezier(.3,1.25,.4,1), height .5s cubic-bezier(.3,1.25,.4,1), border-radius .4s, box-shadow .4s; }
+  .panel.open { width: 72%; height: 40%; border-radius: 0 0 28px 28px; box-shadow: 0 24px 60px rgba(0,0,0,.6); }
+  .panel .inner { position: absolute; inset: 0; opacity: 0; transition: opacity .2s; padding: 3.2% 2.4% 2.6%; display: grid; grid-template-columns: 6% 1fr 6%; gap: 2.2%; font-size: clamp(7px, 1.25vw, 13px); }
+  .panel.open .inner { opacity: 1; transition: opacity .35s .22s; }
+  .ptitle { position: absolute; left: 2.6%; top: 4%; font-size: .72em; letter-spacing: .1em; font-weight: 700; color: rgba(255,255,255,.35); }
+  .rail { display: flex; flex-direction: column; gap: 6%; padding-top: 30%; align-items: center; }
+  .rail b { width: 100%; aspect-ratio: 1; border-radius: 22%; display: grid; place-items: center; color: rgba(255,255,255,.35); font-size: .95em; }
+  .rail b.on { background: rgba(255,255,255,.14); color: #fff; }
+  .pane { position: relative; padding-top: 4%; }
+  .tabpane { position: absolute; inset: 4% 0 0; opacity: 0; transform: scale(.97); transition: opacity .3s, transform .3s; display: flex; align-items: center; gap: 4%; }
+  .tabpane.on { opacity: 1; transform: none; }
+  .art { width: 28%; aspect-ratio: 1; border-radius: 12%; background: conic-gradient(from 210deg, #ff5f6d, #ffc371, #47cf73, #36a3ff, #a66cff, #ff5f6d);
+    box-shadow: 0 10px 24px rgba(0,0,0,.5); position: relative; }
+  .art::after { content: ""; position: absolute; inset: 34%; border-radius: 50%; background: #111; box-shadow: 0 0 0 4px rgba(255,255,255,.15); }
+  .track { flex: 1; }
+  .track h4 { margin: 0; font-size: 1.35em; letter-spacing: -.01em; }
+  .track p { margin: .2em 0 0; color: rgba(255,255,255,.55); font-size: .95em; }
+  .ctrls { display: flex; gap: 9%; justify-content: center; margin: 7% 0 6%; align-items: center; }
+  .ctrls i { font-style: normal; color: #fff; opacity: .9; }
+  .ctrls .pp { width: 2.6em; height: 2.6em; border-radius: 50%; background: rgba(255,255,255,.14); display: grid; place-items: center; }
+  .prog { height: 4px; border-radius: 4px; background: rgba(255,255,255,.1); overflow: hidden; }
+  .prog i { display: block; height: 100%; width: 38%; background: rgba(255,255,255,.85); animation: play 9s linear infinite; }
+  @keyframes play { from { width: 18%; } to { width: 72%; } }
+  .files { display: flex; gap: 3%; width: 100%; }
+  .file { flex: 1; text-align: center; color: rgba(255,255,255,.6); font-size: .8em; }
+  .file div { aspect-ratio: 1.3; border-radius: 10%; margin-bottom: 6%; }
+  .clips { width: 100%; display: flex; flex-direction: column; gap: 5%; }
+  .clips div { padding: 2.3% 3%; border-radius: 8px; background: rgba(255,255,255,.06); color: rgba(255,255,255,.8); font-size: .9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .shot { width: 100%; height: 100%; border-radius: 10px; position: relative; background: linear-gradient(135deg, #2b5876, #4e4376); overflow: hidden; }
+  .shot .sel { position: absolute; left: 22%; top: 18%; width: 46%; height: 56%; border: 1.5px dashed #fff; box-shadow: 0 0 0 999px rgba(0,0,0,.45); }
+  .shot .sz { position: absolute; left: 22%; top: 6%; font-size: .75em; background: rgba(20,20,20,.8); padding: .1em .5em; border-radius: 4px; }
+  .shot .tools { position: absolute; left: 70%; top: 18%; display: flex; flex-direction: column; gap: 4px; background: rgba(25,25,25,.95); padding: 4px; border-radius: 6px; }
+  .shot .tools i { width: 1.4em; height: 1.4em; border-radius: 4px; background: rgba(255,255,255,.12); }
+  .shot .tools i:first-child { background: var(--accent); }
+  .shot .arrow { position: absolute; left: 30%; top: 50%; width: 22%; height: 3px; background: #ff453a; transform: rotate(-24deg); transform-origin: left; }
+
+  section { padding: 96px 0 0; }
+  .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  h2 { font-size: clamp(28px, 4vw, 44px); letter-spacing: -.03em; line-height: 1.1; margin: 10px 0 14px; font-weight: 800; }
+  .sub { color: var(--muted); max-width: 620px; margin: 0 0 40px; font-size: 17px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+  .card { background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015)); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; transition: border-color .2s, transform .2s; }
+  .card:hover { border-color: rgba(255,255,255,.16); transform: translateY(-2px); }
+  .card .ic { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 14px; }
+  .card .ic svg { width: 22px; height: 22px; }
+  .card h3 { margin: 0 0 6px; font-size: 17px; letter-spacing: -.01em; }
+  .card p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .card.wide { grid-column: span 2; }
+  @media (max-width: 560px) { .card.wide { grid-column: auto; } }
+  .kbd { display: inline-block; font: 600 12px/1 Inter, sans-serif; padding: 4px 7px; border-radius: 6px; border: 1px solid rgba(255,255,255,.18); border-bottom-width: 2px; background: rgba(255,255,255,.05); color: var(--text); }
+
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; counter-reset: s; }
+  .step { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+  .step::before { counter-increment: s; content: counter(s); position: absolute; top: 20px; right: 22px; font-size: 44px; font-weight: 800; color: rgba(255,255,255,.06); line-height: 1; }
+  .step h3 { margin: 0 0 8px; font-size: 18px; }
+  .step p { margin: 0; color: var(--muted); font-size: 15px; }
+  .smart { margin-top: 16px; border-radius: 10px; background: #1f6fb2; padding: 14px; font-size: 12.5px; color: #e9f3ff; }
+  .smart b { display: block; font-size: 15px; margin-bottom: 6px; }
+  .smart u { text-decoration-color: rgba(255,255,255,.7); }
+  .smart .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+  .smart .row span { padding: 5px 10px; border: 1px solid rgba(255,255,255,.6); border-radius: 3px; }
+  .smart .row span.hl { background: #fff; color: #1f6fb2; font-weight: 600; box-shadow: 0 0 0 3px rgba(255,255,255,.35); }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
+  .panelbox { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; }
+  .panelbox h3 { margin: 0 0 8px; font-size: 20px; }
+  .panelbox p { margin: 0 0 10px; color: var(--muted); }
+  .panelbox ul { margin: 8px 0 0; padding-left: 20px; color: var(--muted); }
+  .panelbox li { margin: 4px 0; }
+
+  details { border-bottom: 1px solid var(--line); padding: 18px 0; }
+  summary { cursor: pointer; font-weight: 600; font-size: 17px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; color: var(--faint); font-size: 22px; line-height: 1; transition: transform .2s; }
+  details[open] summary::after { transform: rotate(45deg); }
+  details p { color: var(--muted); margin: 10px 0 0; max-width: 760px; }
+  code { font: 13px/1.4 "Cascadia Mono", ui-monospace, monospace; background: rgba(255,255,255,.07); padding: 2px 6px; border-radius: 5px; }
+
+  .support { margin-top: 96px; text-align: center; border-radius: 26px; padding: 56px 24px; border: 1px solid var(--line);
+    background: radial-gradient(500px 240px at 50% 0%, rgba(255,95,109,.18), transparent 70%), var(--bg2); }
+  .support h2 { margin-top: 0; }
+  .support p { color: var(--muted); max-width: 540px; margin: 0 auto 26px; }
+  .btn.heart { background: linear-gradient(180deg, #ff6b7a, #e63950); color: #fff; box-shadow: 0 10px 30px rgba(230,57,80,.35); }
+  .btn.heart:hover { transform: translateY(-1px); box-shadow: 0 14px 40px rgba(230,57,80,.5); }
+
+  footer { padding: 56px 0 48px; color: var(--faint); font-size: 14px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px; }
+  footer a { color: var(--muted); }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s, transform .6s; }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .panel, .cursor, .tabpane, .prog i { transition: none !important; animation: none !important; }
+  }
+  @media (max-width: 640px) {
+    .navlinks a { display: none; }
+    .hero { padding-top: 28px; }
+    .stage { border-radius: 14px; aspect-ratio: 4 / 3.4; }
+    .panel.open { width: 94%; height: 52%; }
+    section { padding-top: 72px; }
+  }
+</style>
+</head>
+<body>
+<div class="strip" aria-hidden="true"></div>
+<div class="wrap">
+  <nav>
+    <a class="brand" href="#"><img src="icon.png" alt="" width="30" height="30">Cyclop</a>
+    <div class="navlinks">
+      <a href="#features" data-i18n="nav.features">Возможности</a>
+      <a href="#install" data-i18n="nav.install">Установка</a>
+      <a href="#faq" data-i18n="nav.faq">Вопросы</a>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="ru">RU</button><button type="button" data-lang="en">EN</button>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="glow"></div>
+    <span class="badge"><i></i><span data-i18n="hero.badge">Бесплатно · без рекламы · обновляется сам</span></span>
+    <h1 data-i18n-html="hero.title">Всё нужное — <em>вверху экрана</em></h1>
+    <p class="lead" data-i18n="hero.lead">Задержите курсор на тонкой полоске в центре верхнего края — раскроется панель: музыка, файлы, история буфера обмена, скриншоты и ещё семь полезных вкладок. Увели курсор — панель исчезла.</p>
+    <div class="cta">
+      <a class="btn primary" id="download" href="https://cyclop-updates.cyclop-updates.workers.dev/download?arch=x64">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.4 10.4 4.4v7.1H3V5.4Zm0 13.2 7.4 1v-7.1H3v6.1Zm8.3 1.1L21 21v-8.5h-9.7v7.2Zm0-15.4v7.2H21V3l-9.7 1.3Z"/></svg>
+        <span data-i18n="hero.download">Скачать для Windows</span>
+      </a>
+      <a class="btn ghost" href="#install" data-i18n="hero.how">Как установить</a>
+    </div>
+    <div class="meta"><span id="version" data-i18n="hero.meta">Windows 10 и 11 · один файл, без установки</span> ·
+      <a id="other-arch" href="https://cyclop-updates.cyclop-updates.workers.dev/download?arch=arm64" data-i18n="hero.arm">версия для ARM</a></div>
+    <div class="notwin" id="notwin" data-i18n="hero.notwin">Cyclop — программа для Windows. Откройте эту страницу на компьютере с Windows, чтобы скачать.</div>
+
+    <div class="stage" id="stage" aria-label="Демонстрация панели" role="img">
+      <div class="win"></div><div class="win b"></div>
+      <div class="panel" id="panel">
+        <span class="ptitle" id="ptitle">МУЗЫКА</span>
+        <div class="inner">
+          <div class="rail" id="railL"><b class="on">♫</b><b>▤</b><b>⧉</b><b>⌖</b><b>▦</b></div>
+          <div class="pane">
+            <div class="tabpane on" data-tab="music">
+              <div class="art"></div>
+              <div class="track">
+                <h4>Midnight City</h4><p>M83 — Hurry Up, We're Dreaming</p>
+                <div class="ctrls"><i>⏮</i><span class="pp"><i>⏸</i></span><i>⏭</i></div>
+                <div class="prog"><i></i></div>
+              </div>
+            </div>
+            <div class="tabpane" data-tab="shelf">
+              <div class="files">
+                <div class="file"><div style="background:linear-gradient(135deg,#2b5876,#4e4376)"></div>Снимок 10.42.png</div>
+                <div class="file"><div style="background:linear-gradient(135deg,#f7971e,#ffd200)"></div>Договор.pdf</div>
+                <div class="file"><div style="background:linear-gradient(135deg,#11998e,#38ef7d)"></div>Отчёт.xlsx</div>
+                <div class="file"><div style="background:linear-gradient(135deg,#ee0979,#ff6a00)"></div>Видео.mp4</div>
+              </div>
+            </div>
+            <div class="tabpane" data-tab="clip">
+              <div class="clips"><div>https://dalink.to/denkoozo</div><div>+998 90 123 45 67</div><div>Встреча в 15:00, переговорная 3</div><div>hello@example.com</div></div>
+            </div>
+            <div class="tabpane" data-tab="shot">
+              <div class="shot"><div class="sel"></div><span class="sz">550×290</span><div class="arrow"></div><div class="tools"><i></i><i></i><i></i><i></i></div></div>
+            </div>
+          </div>
+          <div class="rail"><b>✎</b><b>$</b><b>▭</b><b>⚙</b></div>
+        </div>
+      </div>
+      <svg class="cursor" id="cursor" viewBox="0 0 14 20" style="left:62%;top:64%"><path d="M1 1v15l4-4 3 7 3-1-3-7h6L1 1Z" fill="#fff" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/></svg>
+      <div class="taskbar"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+  </header>
+
+  <section id="features">
+    <div class="reveal">
+      <div class="eyebrow" data-i18n="f.eyebrow">Возможности</div>
+      <h2 data-i18n="f.title">Одиннадцать вкладок, ни одного лишнего окна</h2>
+      <p class="sub" data-i18n="f.sub">Панель не забирает фокус у программы, в которой вы работаете, и ничего не стоит, пока закрыта.</p>
+    </div>
+    <div class="grid">
+      <div class="card reveal wide">
+        <div class="ic" style="background:rgba(10,132,255,.15);color:#4da3ff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+        <h3 data-i18n="f.music.t">Музыка из любого источника</h3>
+        <p data-i18n="f.music.d">Spotify, «Медиаплеер», фильм во вкладке браузера — обложка, перемотка, пауза, следующий трек. Клик по обложке открывает окно, где играет звук.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic" style="background:rgba(255,159,10,.15);color:#ffb340"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/></svg></div>
+        <h3 data-i18n="f.shelf.t">Полка для файлов</h3>
+        <p data-i18n="f.shelf.d">Перетащите файл наверх, перейдите в другую папку — и вытащите его оттуда. Файлы остаются на месте.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic" style="background:rgba(48,209,88,.15);color:#4ade80"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg></div>
+        <h3 data-i18n="f.clip.t">История буфера</h3>
+        <p data-i18n="f.clip.d">Последние 40 копирований — клик возвращает любое. Пароли из менеджеров паролей не сохраняются.</p>
+      </div>
+      <div class="card reveal wide">
+        <div class="ic" style="background:rgba(255,69,58,.15);color:#ff6b61"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg></div>
+        <h3 data-i18n="f.shot.t">Скриншоты с редактором</h3>
+        <p data-i18n-html="f.shot.d"><span class="kbd">Ctrl</span> <span class="kbd">Alt</span> <span class="kbd">A</span> — выделите область левой кнопкой, и она уже в буфере. Правой — откроется редактор: стрелки, рамки, маркер, текст. <span class="kbd">Ctrl</span> <span class="kbd">Alt</span> <span class="kbd">S</span> — весь экран. Сочетания можно поменять.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic" style="background:rgba(191,90,242,.15);color:#c77dff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 17v5M5 3h14l-2 7 3 3H4l3-3-2-7Z"/></svg></div>
+        <h3 data-i18n="f.snip.t">Заготовки</h3>
+        <p data-i18n="f.snip.d">Почта, телефон, реквизиты — то, что печатаете каждую неделю. Клик — и текст в буфере.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic" style="background:rgba(100,210,255,.15);color:#64d2ff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+        <h3 data-i18n="f.cal.t">Ближайшая встреча</h3>
+        <p data-i18n="f.cal.d">Google или Outlook календарь, отсчёт до начала и кнопка «Подключиться» для Zoom, Meet и Teams.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic" style="background:rgba(94,92,230,.18);color:#8f8dff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></div>
+        <h3 data-i18n="f.tr.t">Перевод и валюты</h3>
+        <p data-i18n="f.tr.d">Английский ↔ русский на лету и конвертер с курсами на сегодня: доллар, евро, рубль, сум и ещё 150 валют.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic" style="background:rgba(255,214,10,.14);color:#ffd60a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
+        <h3 data-i18n="f.notes.t">Заметки и суфлёр</h3>
+        <p data-i18n="f.notes.d">Быстрые заметки на час и бегущий текст под камерой — для видео и созвонов.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic" style="background:rgba(255,255,255,.08);color:#ddd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg></div>
+        <h3 data-i18n="f.lock.t">Блокировка клавиатуры</h3>
+        <p data-i18n="f.lock.d">Протрите клавиши и экран, не нажав ничего лишнего. Снимается удержанием Esc.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="reveal">
+      <div class="eyebrow" data-i18n="i.eyebrow">Установка</div>
+      <h2 data-i18n="i.title">Три шага, минута времени</h2>
+      <p class="sub" data-i18n="i.sub">Cyclop — один файл. Ничего не нужно устанавливать, и он сам обновляется до новых версий.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <h3 data-i18n="i.1.t">Скачайте</h3>
+        <p data-i18n="i.1.d">Нажмите «Скачать для Windows» вверху страницы. Файл Cyclop-win-x64.exe окажется в папке «Загрузки».</p>
+      </div>
+      <div class="step reveal">
+        <h3 data-i18n="i.2.t">Разрешите запуск</h3>
+        <p data-i18n="i.2.d">Windows предупреждает о программах от небольших авторов. Нажмите «Подробнее», затем «Выполнить в любом случае» — это нужно только один раз.</p>
+        <div class="smart" aria-hidden="true">
+          <b data-i18n="i.2.box">Windows защитила ваш компьютер</b>
+          <u data-i18n="i.2.more">Подробнее</u>
+          <div class="row"><span class="hl" data-i18n="i.2.run">Выполнить в любом случае</span><span data-i18n="i.2.no">Не выполнять</span></div>
+        </div>
+      </div>
+      <div class="step reveal">
+        <h3 data-i18n="i.3.t">Наведите на полоску</h3>
+        <p data-i18n="i.3.d">Вверху экрана по центру появится тонкая чёрная полоска. Задержите на ней курсор — раскроется панель. Значок Cyclop появится и в трее у часов.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="split">
+      <div class="panelbox reveal">
+        <div class="eyebrow" data-i18n="u.eyebrow">Обновления</div>
+        <h3 data-i18n="u.title">Всегда последняя версия</h3>
+        <p data-i18n="u.d">Cyclop сам проверяет обновления, скачивает их и перезапускается — без окон и вопросов. Каждый файл сверяется по контрольной сумме, поэтому подменить обновление нельзя.</p>
+      </div>
+      <div class="panelbox reveal">
+        <div class="eyebrow" style="color:var(--green)" data-i18n="p.eyebrow">Приватность</div>
+        <h3 data-i18n="p.title">Ваши данные остаются у вас</h3>
+        <p data-i18n="p.d">Буфер, заметки и файлы хранятся только на вашем компьютере. Программа сообщает о себе лишь анонимный номер установки и версию — чтобы автор знал, сколько людей ею пользуется. Это выключается в настройках.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="reveal">
+      <div class="eyebrow" data-i18n="q.eyebrow">Вопросы</div>
+      <h2 data-i18n="q.title">Частые вопросы</h2>
+    </div>
+    <div class="reveal">
+      <details><summary data-i18n="q.1.q">Это безопасно? Почему Windows предупреждает?</summary>
+        <p data-i18n="q.1.a">Предупреждение SmartScreen появляется у любой программы без платного сертификата подписи — это не значит, что в ней вирус. Исходный код Cyclop открыт на GitHub, его может проверить кто угодно.</p></details>
+      <details><summary data-i18n="q.2.q">Он платный?</summary>
+        <p data-i18n="q.2.a">Нет. Cyclop бесплатный, без рекламы и подписок. Если он вам помогает — можно поддержать автора донатом.</p></details>
+      <details><summary data-i18n="q.3.q">Какие нужны требования?</summary>
+        <p data-i18n="q.3.a">Windows 10 (версия 2004 или новее) или Windows 11, обычный ПК или Windows на ARM. Около 70 МБ на диске.</p></details>
+      <details><summary data-i18n="q.4.q">Как сделать, чтобы он запускался вместе с Windows?</summary>
+        <p data-i18n="q.4.a">Откройте панель → вкладка «Настройки» (шестерёнка) → «Запускать при входе».</p></details>
+      <details><summary data-i18n="q.5.q">Как удалить?</summary>
+        <p data-i18n-html="q.5.a">Выключите «Запускать при входе» в настройках, выйдите из Cyclop через значок в трее и удалите файл Cyclop.exe. Настройки и заметки лежат в папке <code>%APPDATA%\Cyclop</code> — её тоже можно удалить.</p></details>
+      <details><summary data-i18n="q.6.q">А есть версия для Mac?</summary>
+        <p data-i18n-html="q.6.a">Cyclop родился на macOS — оригинальная версия для MacBook с чёлкой: <a href="https://github.com/akalikbergenov/cyclop">github.com/akalikbergenov/cyclop</a>.</p></details>
+    </div>
+  </section>
+
+  <div class="support reveal">
+    <h2 data-i18n="s.title">Нравится Cyclop?</h2>
+    <p data-i18n="s.d">Программу делает один человек в свободное время. Донат помогает выпускать новые версии.</p>
+    <div class="cta">
+      <a class="btn heart" href="https://dalink.to/denkoozo" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9.3C.3 8.3 2.2 4 6.2 4c2.2 0 3.8 1.2 4.8 2.7C12 5.2 13.6 4 15.8 4c4 0 5.9 4.3 4.2 7.7C19.5 16.4 12 21 12 21Z"/></svg>
+        <span data-i18n="s.donate">Поддержать автора</span></a>
+      <a class="btn ghost" href="https://www.instagram.com/shoxrux.edit/" target="_blank" rel="noopener">Instagram · @shoxrux.edit</a>
+    </div>
+  </div>
+
+  <footer>
+    <span data-i18n-html="ft.left">© Cyclop для Windows — <a href="https://www.instagram.com/shoxrux.edit/">@shoxrux.edit</a>. Основано на <a href="https://github.com/akalikbergenov/cyclop">Cyclop для macOS</a> (MIT).</span>
+    <span><a href="https://github.com/shoxruxTatu/cyclop-windows">GitHub</a> · <a href="https://github.com/shoxruxTatu/cyclop-windows/releases" data-i18n="ft.all">Все версии</a></span>
+  </footer>
+</div>
+
+<script>
+const SERVER = "https://cyclop-updates.cyclop-updates.workers.dev";
+
+const EN = {
+  "nav.features": "Features", "nav.install": "Install", "nav.faq": "FAQ",
+  "hero.badge": "Free · no ads · updates itself",
+  "hero.title": "Everything you need — <em>at the top of the screen</em>",
+  "hero.lead": "Rest the pointer on the thin strip at the top centre of your screen and a panel unfolds: music, files, clipboard history, screenshots and seven more handy tabs. Move away — it's gone.",
+  "hero.download": "Download for Windows", "hero.how": "How to install",
+  "hero.meta": "Windows 10 and 11 · a single file, nothing to install", "hero.arm": "ARM version",
+  "hero.notwin": "Cyclop is a Windows app. Open this page on a Windows PC to download it.",
+  "f.eyebrow": "Features", "f.title": "Eleven tabs, not a single extra window",
+  "f.sub": "The panel never steals focus from the app you're working in, and costs nothing while it's closed.",
+  "f.music.t": "Music from anywhere", "f.music.d": "Spotify, Media Player, a film in a browser tab — artwork, seeking, pause, next track. Click the artwork to jump to the window that's playing.",
+  "f.shelf.t": "A shelf for files", "f.shelf.d": "Drag a file up, switch folders, and drag it back out. Files stay where they are.",
+  "f.clip.t": "Clipboard history", "f.clip.d": "Your last 40 copies — click one to bring it back. Passwords from password managers are never kept.",
+  "f.shot.t": "Screenshots with an editor", "f.shot.d": "<span class=\"kbd\">Ctrl</span> <span class=\"kbd\">Alt</span> <span class=\"kbd\">A</span> — select with the left button and it's already copied. With the right button an editor opens: arrows, boxes, marker, text. <span class=\"kbd\">Ctrl</span> <span class=\"kbd\">Alt</span> <span class=\"kbd\">S</span> — the whole screen. Shortcuts are configurable.",
+  "f.snip.t": "Snippets", "f.snip.d": "Email, phone, bank details — what you type every week. One click and it's on the clipboard.",
+  "f.cal.t": "Your next meeting", "f.cal.d": "Google or Outlook calendar, a countdown and a Join button for Zoom, Meet and Teams.",
+  "f.tr.t": "Translation and currencies", "f.tr.d": "English ↔ Russian as you type, and a converter with today's rates for 150+ currencies.",
+  "f.notes.t": "Notes and teleprompter", "f.notes.d": "Quick notes for the next hour and scrolling text right under the webcam — for videos and calls.",
+  "f.lock.t": "Keyboard lock", "f.lock.d": "Wipe the keys and the screen without typing anything. Hold Esc to unlock.",
+  "i.eyebrow": "Install", "i.title": "Three steps, one minute",
+  "i.sub": "Cyclop is a single file. Nothing to install, and it keeps itself up to date.",
+  "i.1.t": "Download", "i.1.d": "Click “Download for Windows” at the top. Cyclop-win-x64.exe lands in your Downloads folder.",
+  "i.2.t": "Allow it to run", "i.2.d": "Windows warns about apps from small developers. Click “More info”, then “Run anyway” — you only do this once.",
+  "i.2.box": "Windows protected your PC", "i.2.more": "More info", "i.2.run": "Run anyway", "i.2.no": "Don't run",
+  "i.3.t": "Hover the strip", "i.3.d": "A thin black strip appears at the top centre of the screen. Rest the pointer on it and the panel opens. The Cyclop icon also shows up in the tray by the clock.",
+  "u.eyebrow": "Updates", "u.title": "Always the latest version",
+  "u.d": "Cyclop checks for updates, downloads them and restarts by itself — no windows, no questions. Every file is verified by checksum, so an update can't be tampered with.",
+  "p.eyebrow": "Privacy", "p.title": "Your data stays with you",
+  "p.d": "Clipboard, notes and files stay on your PC. The app only reports an anonymous install number and its version, so the author knows how many people use it. You can turn that off in Settings.",
+  "q.eyebrow": "FAQ", "q.title": "Frequently asked questions",
+  "q.1.q": "Is it safe? Why does Windows warn me?", "q.1.a": "SmartScreen warns about any app without a paid code-signing certificate — it doesn't mean there's a virus. Cyclop's source code is open on GitHub for anyone to review.",
+  "q.2.q": "Is it paid?", "q.2.a": "No. Cyclop is free, with no ads or subscriptions. If it helps you, you can support the author with a donation.",
+  "q.3.q": "What are the requirements?", "q.3.a": "Windows 10 (version 2004 or later) or Windows 11, a regular PC or Windows on ARM. About 70 MB of disk space.",
+  "q.4.q": "How do I make it start with Windows?", "q.4.a": "Open the panel → Settings tab (the gear) → “Launch at Login”.",
+  "q.5.q": "How do I uninstall it?", "q.5.a": "Turn off “Launch at Login” in Settings, quit Cyclop from the tray icon and delete Cyclop.exe. Settings and notes live in <code>%APPDATA%\\Cyclop</code> — you can delete that folder too.",
+  "q.6.q": "Is there a Mac version?", "q.6.a": "Cyclop was born on macOS — the original for MacBooks with a notch: <a href=\"https://github.com/akalikbergenov/cyclop\">github.com/akalikbergenov/cyclop</a>.",
+  "s.title": "Enjoying Cyclop?", "s.d": "Cyclop is made by one person in their spare time. A donation helps ship new versions.", "s.donate": "Support the author",
+  "ft.left": "© Cyclop for Windows — <a href=\"https://www.instagram.com/shoxrux.edit/\">@shoxrux.edit</a>. Based on <a href=\"https://github.com/akalikbergenov/cyclop\">Cyclop for macOS</a> (MIT).",
+  "ft.all": "All versions",
+  "demo": { music: "MUSIC", shelf: "SHELF", clip: "CLIPBOARD", shot: "SCREENSHOT" },
+  "version": "Version {v} · Windows 10 and 11 · a single file",
+};
+const RU_DEMO = { music: "МУЗЫКА", shelf: "ПОЛКА", clip: "БУФЕР", shot: "СКРИНШОТ" };
+
+// The Russian text is the page itself; English is laid over it on request.
+const ru = {};
+document.querySelectorAll("[data-i18n]").forEach(el => ru[el.dataset.i18n] = el.textContent);
+document.querySelectorAll("[data-i18n-html]").forEach(el => ru[el.dataset.i18nHtml] = el.innerHTML);
+let lang = "ru", latestVersion = null;
+
+function setLang(next) {
+  lang = next;
+  document.documentElement.lang = next;
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const k = el.dataset.i18n; el.textContent = next === "en" ? (EN[k] ?? ru[k]) : ru[k];
+  });
+  document.querySelectorAll("[data-i18n-html]").forEach(el => {
+    const k = el.dataset.i18nHtml; el.innerHTML = next === "en" ? (EN[k] ?? ru[k]) : ru[k];
+  });
+  document.querySelectorAll(".lang button").forEach(b => b.classList.toggle("on", b.dataset.lang === next));
+  showVersion();
+  try { localStorage.setItem("lang", next); } catch (e) {}
+}
+document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => setLang(b.dataset.lang)));
+
+function initialLang() {
+  try { const saved = localStorage.getItem("lang"); if (saved === "ru" || saved === "en") return saved; } catch (e) {}
+  const l = (navigator.language || "ru").slice(0, 2).toLowerCase();
+  return ["ru", "uk", "be", "kk", "uz", "ky", "tg", "az", "hy", "ka", "tk"].includes(l) ? "ru" : "en";
+}
+
+function showVersion() {
+  if (!latestVersion) return;
+  document.getElementById("version").textContent = lang === "en"
+    ? EN.version.replace("{v}", latestVersion)
+    : `Версия ${latestVersion} · Windows 10 и 11 · один файл`;
+}
+
+// The newest version, as the update server sees it. Asked without an install
+// id, so a visit to the page is not counted as a user.
+fetch(SERVER + "/v1/check?v=0.0.0&arch=x64").then(r => r.json()).then(j => {
+  if (j.version) { latestVersion = j.version; showVersion(); }
+}).catch(() => {});
+
+// Windows on ARM gets the ARM build; everyone else x64, with the other a click away.
+async function detectArch() {
+  const ua = navigator.userAgent;
+  const isWindows = /Windows/i.test(ua) || navigator.userAgentData?.platform === "Windows";
+  if (!isWindows) document.getElementById("notwin").style.display = "block";
+  let arm = false;
+  try {
+    const v = await navigator.userAgentData?.getHighEntropyValues(["architecture"]);
+    arm = v?.architecture === "arm";
+  } catch (e) {}
+  if (arm) {
+    document.getElementById("download").href = SERVER + "/download?arch=arm64";
+    const other = document.getElementById("other-arch");
+    other.href = SERVER + "/download?arch=x64";
+    other.dataset.i18n = "hero.x64";
+    EN["hero.x64"] = "regular PC version"; ru["hero.x64"] = "версия для обычных ПК";
+    other.textContent = lang === "en" ? EN["hero.x64"] : ru["hero.x64"];
+  }
+}
+
+// The demo: the pointer goes up to the strip, the panel unfolds and walks
+// through a few tabs, the pointer leaves, the panel folds. Then again.
+const panel = document.getElementById("panel"), cursor = document.getElementById("cursor");
+const title = document.getElementById("ptitle");
+const tabs = ["music", "shelf", "clip", "shot"];
+const railIcons = document.querySelectorAll("#railL b");
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function moveCursor(x, y) { cursor.style.left = x + "%"; cursor.style.top = y + "%"; }
+function showTab(i) {
+  document.querySelectorAll(".tabpane").forEach(p => p.classList.toggle("on", p.dataset.tab === tabs[i]));
+  railIcons.forEach((b, j) => b.classList.toggle("on", j === i));
+  title.textContent = (lang === "en" ? EN.demo : RU_DEMO)[tabs[i]];
+}
+async function demo() {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) { panel.classList.add("open"); showTab(0); moveCursor(50, 20); return; }
+  while (true) {
+    showTab(0);
+    moveCursor(50.5, 0.4); await sleep(1300);
+    panel.classList.add("open"); await sleep(1400);
+    for (let i = 1; i < tabs.length; i++) {
+      moveCursor(16.5, 8 + i * 5.2); await sleep(1300);
+      showTab(i); await sleep(1900);
+    }
+    moveCursor(16.5, 8); await sleep(900); showTab(0); await sleep(1800);
+    moveCursor(70, 66); await sleep(450);
+    panel.classList.remove("open"); await sleep(2600);
+  }
+}
+
+// Sections fade in as they scroll into view.
+const io = new IntersectionObserver(entries => entries.forEach(e => {
+  if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+}), { threshold: .12 });
+document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+
+setLang(initialLang());
+detectArch();
+demo();
+</script>
+</body>
+</html>

@@ -9,3 +9,11 @@ CREATE TABLE IF NOT EXISTS pings (
   PRIMARY KEY (id, day)
 );
 CREATE INDEX IF NOT EXISTS pings_day ON pings (day);
+
+-- Downloads through the website's button, per day and architecture.
+CREATE TABLE IF NOT EXISTS downloads (
+  day  TEXT NOT NULL,
+  arch TEXT NOT NULL,
+  n    INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, arch)
+);
