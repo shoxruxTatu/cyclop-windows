@@ -35,6 +35,7 @@ internal sealed class TrayIcon : IDisposable
         var screen = new ToolStripMenuItem(L10n.T("Screenshot of the Screen"), null, (_, _) => ScreenShot?.Invoke());
         menu.Items.Add(area);
         menu.Items.Add(screen);
+        menu.Items.Add(new ToolStripMenuItem(L10n.T("Report a Bug or Suggest an Idea…"), null, (_, _) => FeedbackWindow.Open()));
         menu.Opening += (_, _) =>
         {
             area.ShortcutKeyDisplayString = model.Config.HotkeyArea;

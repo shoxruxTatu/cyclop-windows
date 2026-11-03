@@ -238,3 +238,23 @@
 "Once in a while Cyclop asks the update server for the newest version. With the count on, it adds a random install number, so the author can see how many people use Cyclop. No name, files or contents are sent." = "Время от времени Cyclop спрашивает сервер обновлений о новой версии. Если подсчёт включён, к запросу добавляется случайный номер установки — так автор видит, сколько людей пользуется Cyclop. Ни имени, ни файлов, ни содержимого не отправляется.";
 "Cyclop has been updated to %@." = "Cyclop обновлён до версии %@.";
 "Cyclop checks for updates and anonymously counts how many people use it. No personal data is sent. Turn it off in Settings → Updates." = "Cyclop проверяет обновления и анонимно считает число пользователей. Личные данные не отправляются. Выключить: Настройки → Обновления.";
+
+/* Обратная связь */
+"Feedback" = "Обратная связь";
+"Report a Bug" = "Сообщить об ошибке";
+"Suggest an Idea" = "Предложить идею";
+"Report a Bug or Suggest an Idea" = "Ошибка или идея";
+"Report a Bug or Suggest an Idea…" = "Сообщить об ошибке или идее…";
+"Write to the author" = "Написать автору";
+"Something broken, or an idea for what to add? Every message is read." = "Что-то сломалось или есть идея, что добавить? Каждое сообщение читается.";
+"Bug" = "Ошибка";
+"Idea" = "Идея";
+"What happened, or what should Cyclop do?" = "Что случилось или что должен уметь Cyclop?";
+"Telegram @name or email — if you want an answer" = "Telegram @имя или почта — если хотите ответ";
+"Attach the work log — helps find the bug" = "Приложить журнал работы — помогает найти ошибку";
+"The log has the app's version, Windows version and which media apps it saw. No passwords, files or clipboard contents." = "В журнале — версии программы и Windows и какие плееры она видела. Ни паролей, ни файлов, ни содержимого буфера.";
+"Send" = "Отправить";
+"Sending…" = "Отправляю…";
+"Thank you! The message has been sent." = "Спасибо! Сообщение отправлено.";
+"Could not send. Check the connection and try again." = "Не удалось отправить. Проверьте интернет и попробуйте ещё раз.";
+"This build has no server to send to. Download Cyclop from the website to write from the app." = "В этой сборке нет адреса сервера. Скачайте Cyclop с сайта, чтобы писать из программы.";

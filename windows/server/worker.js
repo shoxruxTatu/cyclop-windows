@@ -14,6 +14,15 @@
 //   Kalikbergenov (MIT), from its own GitHub releases. The website's buttons
 //   point here, so they never need editing when a version comes out.
 //
+// POST /v1/feedback   {kind, text, contact?, version?, os?, arch?, source, log?}
+//   A bug report or a suggestion, from the app's form or the website's.
+//   Stored for the author; no IP is kept (a hashed one is used for a few
+//   minutes to stop floods, in the cache, never in the database).
+//
+// GET /feedback, POST /feedback
+//   The author's inbox: new and resolved messages, mark resolved, delete.
+//   Same password as /stats.
+//
 // GET /stats
 //   Users per day, week and month, versions, new installs. Behind a password
 //   (the STATS_PASSWORD secret); the browser asks for it — any user name.
@@ -35,6 +44,8 @@ export default {
       if (url.pathname === "/v1/check") return await check(url, env, ctx);
       if (url.pathname === "/download") return await download(url, env, ctx);
       if (url.pathname === "/stats") return await stats(request, env);
+      if (url.pathname === "/v1/feedback") return await receiveFeedback(request, env);
+      if (url.pathname === "/feedback") return await inbox(request, env, url);
       return new Response("Cyclop", { status: 404 });
     } catch (e) {
       return json({ error: String(e && e.message || e) }, 500);
@@ -283,13 +294,14 @@ async function stats(request, env) {
   const downloads = await all(
     "SELECT day, SUM(n) AS n FROM downloads WHERE day >= ?1 GROUP BY day ORDER BY day", daysAgo(29));
   const downloadsTotal = (await one("SELECT SUM(n) AS n FROM downloads")).n || 0;
+  const newFeedback = (await one("SELECT COUNT(*) AS n FROM feedback WHERE status = 'new'")).n || 0;
   const platforms = await all(
     "SELECT CASE arch WHEN 'mac' THEN 'Mac' WHEN 'arm64' THEN 'Windows ARM' ELSE 'Windows x64' END AS arch, " +
     "SUM(n) AS n FROM downloads GROUP BY arch ORDER BY n DESC");
   const arches = await all(
     "SELECT arch, COUNT(DISTINCT id) AS n FROM pings WHERE day >= ?1 GROUP BY arch ORDER BY n DESC", daysAgo(6));
 
-  return new Response(page({ dau, wau, mau, total, daily, fresh, versions, arches, downloads, downloadsTotal, platforms }), {
+  return new Response(page({ dau, wau, mau, total, daily, fresh, versions, arches, downloads, downloadsTotal, platforms, newFeedback }), {
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
   });
 }
@@ -348,6 +360,7 @@ function page(s) {
   <div class="tile"><span class="muted">За 30 дней</span><b>${s.mau}</b></div>
   <div class="tile"><span class="muted">Всего</span><b>${s.total}</b></div>
   <div class="tile"><span class="muted">Скачиваний с сайта</span><b>${s.downloadsTotal}</b></div>
+  <a class="tile" href="/feedback" style="text-decoration:none;color:inherit;${s.newFeedback ? "border-color:#0a84ff" : ""}"><span class="muted">Новые отзывы →</span><b>${s.newFeedback}</b></a>
 </div>
 ${bars(s.daily, "Пользователи по дням")}
 ${bars(s.fresh, "Новые установки по дням")}
@@ -360,4 +373,146 @@ ${table(s.arches, "arch", "Архитектура за 7 дней")}
 ${table(s.platforms, "arch", "Скачивания с сайта по платформам, всего")}
 </div>
 </main></body></html>`;
+}
+
+// MARK: - Feedback
+
+const CORS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "POST, OPTIONS",
+  "access-control-allow-headers": "content-type",
+};
+
+async function receiveFeedback(request, env) {
+  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+  if (request.method !== "POST") return new Response("POST only", { status: 405, headers: CORS });
+  const reply = (body, status = 200) => new Response(JSON.stringify(body), {
+    status, headers: { ...CORS, "content-type": "application/json; charset=utf-8" },
+  });
+
+  let body;
+  try { body = await request.json(); } catch { return reply({ ok: false, error: "bad json" }, 400); }
+  // A field humans never see; a bot that fills it is told "thanks" and ignored.
+  if (body.website) return reply({ ok: true });
+
+  const text = String(body.text || "").trim().slice(0, 5000);
+  if (text.length < 3) return reply({ ok: false, error: "empty" }, 400);
+  if (await flooded(request)) return reply({ ok: false, error: "too many" }, 429);
+
+  const kind = body.kind === "bug" ? "bug" : "idea";
+  const source = body.source === "app" ? "app" : "site";
+  const contact = String(body.contact || "").trim().slice(0, 200);
+  const version = VERSION.test(String(body.version || "")) ? String(body.version) : "";
+  const os = OS.test(String(body.os || "")) ? String(body.os) : "";
+  const arch = ARCHES.includes(body.arch) ? body.arch : "";
+  const log = source === "app" ? String(body.log || "").slice(-65536) : "";
+
+  await env.DB.prepare(
+    "INSERT INTO feedback (created, kind, text, contact, version, os, arch, source, log, status) " +
+    "VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 'new')"
+  ).bind(new Date().toISOString(), kind, text, contact, version, os, arch, source, log).run();
+  return reply({ ok: true });
+}
+
+/// At most six messages per ten minutes from one address. The address is
+/// hashed and lives only in this location's cache for those ten minutes.
+async function flooded(request) {
+  const ip = request.headers.get("cf-connecting-ip") || "";
+  const window = Math.floor(Date.now() / 600000);
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${ip}|${window}|cyclop`));
+  const hash = [...new Uint8Array(digest)].slice(0, 12).map((b) => b.toString(16).padStart(2, "0")).join("");
+  const key = new Request(`https://ratelimit.cyclop/${hash}`);
+  const hit = await caches.default.match(key);
+  const count = hit ? parseInt(await hit.text(), 10) || 0 : 0;
+  if (count >= 6) return true;
+  await caches.default.put(key, new Response(String(count + 1), { headers: { "cache-control": "max-age=600" } }));
+  return false;
+}
+
+async function inbox(request, env, url) {
+  if (!authorized(request, env)) {
+    return new Response("Password required", {
+      status: 401,
+      headers: { "www-authenticate": 'Basic realm="Cyclop stats", charset="UTF-8"' },
+    });
+  }
+  if (request.method === "POST") {
+    // Only this page may change things: a form on another site would ride on
+    // the browser's saved password otherwise.
+    const origin = request.headers.get("origin") || request.headers.get("referer") || "";
+    if (!origin.startsWith(url.origin)) return new Response("Forbidden", { status: 403 });
+    const form = await request.formData();
+    const id = parseInt(form.get("id"), 10);
+    const action = form.get("action");
+    if (id > 0 && action === "done") await env.DB.prepare("UPDATE feedback SET status = 'done' WHERE id = ?1").bind(id).run();
+    if (id > 0 && action === "reopen") await env.DB.prepare("UPDATE feedback SET status = 'new' WHERE id = ?1").bind(id).run();
+    if (id > 0 && action === "delete") await env.DB.prepare("DELETE FROM feedback WHERE id = ?1").bind(id).run();
+    return Response.redirect(`${url.origin}/feedback?show=${encodeURIComponent(form.get("show") || "new")}`, 303);
+  }
+
+  const show = ["new", "done", "all"].includes(url.searchParams.get("show")) ? url.searchParams.get("show") : "new";
+  const where = show === "all" ? "" : "WHERE status = ?1";
+  const stmt = env.DB.prepare(`SELECT * FROM feedback ${where} ORDER BY id DESC LIMIT 200`);
+  const rows = (await (show === "all" ? stmt : stmt.bind(show)).all()).results || [];
+  const counts = (await env.DB.prepare("SELECT status, COUNT(*) AS n FROM feedback GROUP BY status").all()).results || [];
+  const count = (s) => (counts.find((c) => c.status === s) || { n: 0 }).n;
+
+  const items = rows.map((r) => {
+    const contact = r.contact ? contactLink(r.contact) : '<span class="muted">без контакта</span>';
+    const meta = [r.source === "app" ? "из программы" : "с сайта", r.version && `v${r.version}`, r.arch, r.os && `Windows ${r.os}`]
+      .filter(Boolean).map(escape).join(" · ");
+    const toggle = r.status === "new"
+      ? `<button name="action" value="done">✓ Решено</button>`
+      : `<button name="action" value="reopen">Вернуть в новые</button>`;
+    return `<article class="${r.status}">
+      <header><span class="kind ${r.kind}">${r.kind === "bug" ? "Ошибка" : "Идея"}</span>
+        <span class="muted">${escape(r.created.slice(0, 16).replace("T", " "))} UTC · ${meta}</span></header>
+      <p class="text">${escape(r.text)}</p>
+      <div class="contact">${contact}</div>
+      ${r.log ? `<details><summary>Журнал программы</summary><pre>${escape(r.log)}</pre></details>` : ""}
+      <form method="post"><input type="hidden" name="id" value="${r.id}"><input type="hidden" name="show" value="${show}">
+        ${toggle}<button name="action" value="delete" class="danger" onclick="return confirm('Удалить сообщение?')">Удалить</button></form>
+    </article>`;
+  }).join("") || '<p class="muted empty">Пусто.</p>';
+
+  const tab = (key, label, n) => `<a href="?show=${key}" class="${show === key ? "on" : ""}">${label}${n === null ? "" : ` <b>${n}</b>`}</a>`;
+  const html = `<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Cyclop — отзывы</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #0b0b0c; color: #f2f2f2; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 48px; }
+  a { color: #6ab4ff; } h1 { font-size: 22px; margin: 0 0 4px; } .muted { color: #8a8a8f; }
+  nav { display: flex; gap: 8px; margin: 20px 0; flex-wrap: wrap; }
+  nav a { text-decoration: none; color: #ccc; border: 1px solid #242428; border-radius: 999px; padding: 6px 14px; }
+  nav a.on { background: #1d1d22; color: #fff; border-color: #3a3a40; }
+  nav a b { color: #0a84ff; }
+  article { background: #161618; border: 1px solid #242428; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  article.done { opacity: .6; }
+  header { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+  .kind { font-weight: 700; font-size: 12px; padding: 2px 9px; border-radius: 999px; }
+  .kind.bug { background: rgba(255,69,58,.18); color: #ff6b61; } .kind.idea { background: rgba(10,132,255,.18); color: #4da3ff; }
+  .text { white-space: pre-wrap; word-break: break-word; margin: 10px 0; font-size: 15.5px; }
+  .contact { font-size: 14px; margin-bottom: 10px; }
+  details { margin-bottom: 10px; } summary { cursor: pointer; color: #8a8a8f; font-size: 13px; }
+  pre { max-height: 320px; overflow: auto; background: #0b0b0c; border: 1px solid #242428; border-radius: 8px; padding: 10px; font-size: 12px; white-space: pre-wrap; }
+  form { display: flex; gap: 8px; }
+  button { font: inherit; font-size: 13px; background: #24242a; color: #fff; border: 1px solid #34343a; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  button:hover { background: #2e2e35; } button.danger { color: #ff6b61; }
+  .empty { padding: 40px 0; text-align: center; }
+</style></head><body><main>
+<h1>Отзывы</h1><div class="muted">Ошибки и предложения от пользователей · <a href="/stats">статистика</a></div>
+<nav>${tab("new", "Новые", count("new"))}${tab("done", "Решённые", count("done"))}${tab("all", "Все", null)}</nav>
+${items}
+</main></body></html>`;
+  return new Response(html, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+}
+
+/// An address becomes a mail link, an @name a Telegram link; anything else
+/// is shown as written.
+function contactLink(contact) {
+  const c = contact.trim();
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c)) return `✉️ <a href="mailto:${escape(c)}">${escape(c)}</a>`;
+  if (/^@[A-Za-z0-9_]{4,32}$/.test(c)) return `✈️ <a href="https://t.me/${escape(c.slice(1))}" target="_blank" rel="noopener">${escape(c)}</a>`;
+  return `☎️ ${escape(c)}`;
 }

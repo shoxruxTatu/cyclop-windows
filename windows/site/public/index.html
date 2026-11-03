@@ -173,6 +173,25 @@
   details p { color: var(--muted); margin: 10px 0 0; max-width: 760px; }
   code { font: 13px/1.4 "Cascadia Mono", ui-monospace, monospace; background: rgba(255,255,255,.07); padding: 2px 6px; border-radius: 5px; }
 
+  .fb { display: grid; grid-template-columns: 1fr 1.25fr; gap: 28px; align-items: start; }
+  @media (max-width: 760px) { .fb { grid-template-columns: 1fr; } }
+  .fb form { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; display: grid; gap: 12px; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: rgba(255,255,255,.04); padding: 4px; border-radius: 12px; }
+  .seg label { text-align: center; padding: 9px; border-radius: 9px; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--muted); }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg input:checked + span { color: var(--text); }
+  .seg label:has(input:checked) { background: rgba(10,132,255,.22); color: var(--text); }
+  .fb textarea, .fb input[type=text] { width: 100%; font: inherit; font-size: 15px; color: var(--text); background: rgba(255,255,255,.05);
+    border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; outline: none; }
+  .fb textarea { min-height: 130px; resize: vertical; }
+  .fb textarea:focus, .fb input[type=text]:focus { border-color: rgba(10,132,255,.6); box-shadow: 0 0 0 3px rgba(10,132,255,.18); }
+  .fb .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  .fb .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .fb button { font: inherit; font-weight: 600; font-size: 15px; color: #fff; border: 0; border-radius: 12px; padding: 12px 22px; cursor: pointer;
+    background: linear-gradient(180deg, #2f97ff, #0a6fe0); box-shadow: 0 8px 24px rgba(10,132,255,.3); }
+  .fb button:disabled { opacity: .5; cursor: default; }
+  #fb-status { font-size: 14px; color: var(--muted); }
+  #fb-status.ok { color: var(--green); } #fb-status.err { color: #ff6b61; }
   .support { margin-top: 96px; text-align: center; border-radius: 26px; padding: 56px 24px; border: 1px solid var(--line);
     background: radial-gradient(500px 240px at 50% 0%, rgba(255,95,109,.18), transparent 70%), var(--bg2); }
   .support h2 { margin-top: 0; }
@@ -388,6 +407,26 @@
     </div>
   </section>
 
+  <section id="feedback">
+    <div class="fb">
+      <div class="reveal">
+        <div class="eyebrow" data-i18n="fb.eyebrow">Обратная связь</div>
+        <h2 data-i18n="fb.title">Нашли ошибку или есть идея?</h2>
+        <p class="sub" data-i18n="fb.sub">Напишите — каждое сообщение читает автор. Из самой программы это тоже можно сделать: значок в трее → «Сообщить об ошибке или идее».</p>
+      </div>
+      <form id="fb-form" class="reveal" novalidate>
+        <div class="seg" role="radiogroup">
+          <label><input type="radio" name="kind" value="bug" checked><span data-i18n="fb.bug">Ошибка</span></label>
+          <label><input type="radio" name="kind" value="idea"><span data-i18n="fb.idea">Идея</span></label>
+        </div>
+        <textarea name="text" maxlength="5000" required data-i18n-placeholder="fb.text" placeholder="Что случилось или что должен уметь Cyclop?"></textarea>
+        <input type="text" name="contact" maxlength="200" data-i18n-placeholder="fb.contact" placeholder="Telegram @имя или почта — если хотите ответ">
+        <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <div class="row"><span id="fb-status"></span><button type="submit" data-i18n="fb.send">Отправить</button></div>
+      </form>
+    </div>
+  </section>
+
   <div class="support reveal">
     <h2 data-i18n="s.title">Нравится Cyclop?</h2>
     <p data-i18n="s.d">Программу делает один человек в свободное время. Донат помогает выпускать новые версии.</p>
@@ -447,6 +486,12 @@ const EN = {
   "s.title": "Enjoying Cyclop?", "s.d": "Cyclop is made by one person in their spare time. A donation helps ship new versions.", "s.donate": "Support the author",
   "ft.left": "© Cyclop for Windows — <a href=\"https://www.instagram.com/shoxrux.edit/\">@shoxrux.edit</a>. Based on <a href=\"https://github.com/akalikbergenov/cyclop\">Cyclop for macOS</a> (MIT).",
   "ft.all": "All versions",
+  "fb.eyebrow": "Feedback", "fb.title": "Found a bug or have an idea?",
+  "fb.sub": "Write — every message is read by the author. You can also do it from the app: tray icon → “Report a bug or suggest an idea”.",
+  "fb.bug": "Bug", "fb.idea": "Idea", "fb.send": "Send",
+  "fb.text": "What happened, or what should Cyclop do?", "fb.contact": "Telegram @name or email — if you want an answer",
+  "fb.sending": "Sending…", "fb.ok": "Thank you! Your message has been sent.", "fb.err": "Could not send. Please try again in a minute.",
+  "fb.short": "Write at least a few words.",
   "demo": { music: "MUSIC", shelf: "SHELF", clip: "CLIPBOARD", shot: "SCREENSHOT" },
   "version": "Version {v} · Windows 10 and 11 · a single file",
 };
@@ -466,6 +511,11 @@ function setLang(next) {
   });
   document.querySelectorAll("[data-i18n-html]").forEach(el => {
     const k = el.dataset.i18nHtml; el.innerHTML = next === "en" ? (EN[k] ?? ru[k]) : ru[k];
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+    const k = el.dataset.i18nPlaceholder;
+    if (!ru["ph:" + k]) ru["ph:" + k] = el.placeholder;
+    el.placeholder = next === "en" ? (EN[k] ?? ru["ph:" + k]) : ru["ph:" + k];
   });
   document.querySelectorAll(".lang button").forEach(b => b.classList.toggle("on", b.dataset.lang === next));
   showVersion();
@@ -572,6 +622,35 @@ async function demo() {
     panel.classList.remove("open"); await sleep(2600);
   }
 }
+
+// Feedback goes to the same server as the downloads, where the author reads it.
+const FB_RU = { sending: "Отправляю…", ok: "Спасибо! Сообщение отправлено.", err: "Не удалось отправить. Попробуйте через минуту.", short: "Напишите хотя бы пару слов." };
+const fbForm = document.getElementById("fb-form"), fbStatus = document.getElementById("fb-status");
+function fbSay(key, cls) {
+  fbStatus.textContent = lang === "en" ? EN["fb." + key] : FB_RU[key];
+  fbStatus.className = cls || "";
+}
+fbForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const data = new FormData(fbForm);
+  const text = String(data.get("text") || "").trim();
+  if (text.length < 3) { fbSay("short", "err"); return; }
+  const button = fbForm.querySelector("button");
+  button.disabled = true;
+  fbSay("sending");
+  try {
+    const r = await fetch(SERVER + "/v1/feedback", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind: data.get("kind"), text, contact: String(data.get("contact") || "").trim(), website: data.get("website"), source: "site" }),
+    });
+    if (!r.ok) throw new Error(r.status);
+    fbSay("ok", "ok");
+    fbForm.reset();
+  } catch (err) {
+    fbSay("err", "err");
+  }
+  button.disabled = false;
+});
 
 // Sections fade in as they scroll into view.
 const io = new IntersectionObserver(entries => entries.forEach(e => {

@@ -128,6 +128,10 @@ internal sealed class SettingsPane : Pane
 
         Section(L10n.T("Updates"), UpdateRows());
 
+        Section(L10n.T("Feedback"),
+            ActionRow(Glyph.Warning, L10n.T("Report a Bug"), () => App.FeedbackWindow.Open(bug: true)),
+            ActionRow(Glyph.Edit, L10n.T("Suggest an Idea"), () => App.FeedbackWindow.Open(bug: false)));
+
         Section(L10n.T("About"),
             LinkRow(Glyph.Person, L10n.T("Windows version"), Author.Instagram, row => Open(Author.InstagramUrl)),
             LinkRow(Glyph.Heart, L10n.T("Support the author"), Author.DonateLabel, row => Open(Author.DonateUrl)),

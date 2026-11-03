@@ -99,3 +99,48 @@ public static class Updates
         return Convert.ToHexString(hash).ToLower(CultureInfo.InvariantCulture);
     }
 }
+
+/// <summary>A bug report or a suggestion, sent to the same server the updates
+/// come from. The log goes along only when the sender ticks the box.</summary>
+public static class FeedbackClient
+{
+    static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(30) };
+
+    public static async Task SendAsync(string server, bool isBug, string text, string contact,
+        string version, string os, string arch, string? log, CancellationToken token = default)
+    {
+        var payload = new Dictionary<string, string?>
+        {
+            ["kind"] = isBug ? "bug" : "idea",
+            ["text"] = text,
+            ["contact"] = contact,
+            ["version"] = version,
+            ["os"] = os,
+            ["arch"] = arch,
+            ["source"] = "app",
+            ["log"] = log,
+        };
+        using var content = new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
+        using var response = await Http.PostAsync($"{server.TrimEnd('/')}/v1/feedback", content, token);
+        response.EnsureSuccessStatusCode();
+    }
+
+    /// <summary>The end of the log — where the trouble usually is.</summary>
+    public static string? LogTail(int maxBytes = 60_000)
+    {
+        try
+        {
+            var path = Support.File("log.txt");
+            if (!File.Exists(path)) return null;
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            var start = Math.Max(0, stream.Length - maxBytes);
+            stream.Seek(start, SeekOrigin.Begin);
+            using var reader = new StreamReader(stream);
+            var text = reader.ReadToEnd();
+            // Cut at a line start rather than mid-line.
+            if (start > 0 && text.IndexOf('\n') is var nl and >= 0) text = text[(nl + 1)..];
+            return text;
+        }
+        catch { return null; }
+    }
+}
