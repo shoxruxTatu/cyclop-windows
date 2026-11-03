@@ -42,12 +42,21 @@ internal sealed class MediaService : Observable
     DateTimeOffset baseTime;
     double rate = 1;
 
+    /// <summary>A browser heard in the mixer while no session plays — see
+    /// <see cref="BrowserAudio"/>. Kept for a while after its sound stops, so
+    /// a paused video can be resumed from the panel.</summary>
+    string? audioOnly;
+    bool audioPlaying;
+    DateTimeOffset audioHeard, audioHold;
+    static readonly TimeSpan AudioMemory = TimeSpan.FromMinutes(10);
+
     public MediaService(Dispatcher dispatcher) => this.dispatcher = dispatcher;
 
     /// <summary>A session is a track even without a title: a video in a
     /// player embedded in a page often publishes none, and "nothing is
     /// playing" over a video that is plainly playing reads as broken.</summary>
     public bool HasTrack =>
+        audioOnly is not null ||
         session is not null && (!string.IsNullOrWhiteSpace(Title) ||
             status is GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing
                 or GlobalSystemMediaTransportControlsSessionPlaybackStatus.Paused);
@@ -95,6 +104,7 @@ internal sealed class MediaService : Observable
     {
         started = false;
         Unwatch();
+        audioOnly = null;
         Attach(null);
         manager = null;
         SetActive(false);
@@ -165,7 +175,10 @@ internal sealed class MediaService : Observable
     void Refresh()
     {
         if (manager is null) return;
+        bool wasBrowser = audioOnly is not null;
         PickSession();
+        if (audioOnly is not null) { ShowBrowser(); return; }
+        if (wasBrowser && session is null) Attach(null);
         if (session is null) return;
         ReadPlayback();
         ReadTimeline();
@@ -201,9 +214,53 @@ internal sealed class MediaService : Observable
                 lastSummary = summary;
                 Support.Log($"media sessions: [{summary}] picked={pick?.SourceAppUserModelId ?? "none"}");
             }
+            if (pick is not null && Status(pick) == Playing) audioOnly = null;
+            else if (HearBrowser()) pick = null;
         }
         catch (Exception e) { Support.Log("media sessions: " + e.Message); }
         if (!ReferenceEquals(pick, session)) Attach(pick);
+    }
+
+    /// <summary>Whether a browser playing without a session is to be shown:
+    /// one heard now, or the one heard last, paused not long ago.</summary>
+    bool HearBrowser()
+    {
+        var now = DateTimeOffset.Now;
+        var heard = BrowserAudio.Playing();
+        if (heard is not null)
+        {
+            if (audioOnly != heard) Support.Log($"media: {heard} plays without a session, following its sound");
+            audioOnly = heard;
+            audioPlaying = true;
+            audioHeard = now;
+            return true;
+        }
+        audioPlaying = false;
+        if (audioOnly is not null && now - audioHeard < AudioMemory && BrowserAudio.Running(audioOnly)) return true;
+        audioOnly = null;
+        return false;
+    }
+
+    /// <summary>The tab's title while it sounds; the last one while paused,
+    /// when the window may well show another page.</summary>
+    void ShowBrowser()
+    {
+        if (audioOnly is null) return;
+        if (audioPlaying && SourceWindow.TopTitle(audioOnly) is { } text)
+        {
+            var (title, site) = BrowserAudio.Clean(text);
+            Title = title;
+            Artist = site;
+        }
+        Album = "";
+        SourceName = FriendlyName(audioOnly);
+        // A key just pressed is believed over the mixer, which takes a few
+        // seconds to notice a pause.
+        if (DateTimeOffset.Now >= audioHold) IsPlaying = audioPlaying;
+        CanSkipNext = CanSkipPrevious = true;
+        CanSeek = false;
+        Duration = 0;
+        Notify();
     }
 
     void Attach(GlobalSystemMediaTransportControlsSession? next)
@@ -315,6 +372,15 @@ internal sealed class MediaService : Observable
     /// </summary>
     public async void TogglePlayPause()
     {
+        if (audioOnly is not null && session is null)
+        {
+            Support.Log($"media: play/pause on {audioOnly} by the media key");
+            MediaKey.Press(MediaKey.PlayPause);
+            IsPlaying = !IsPlaying;
+            audioHold = DateTimeOffset.Now.AddSeconds(4);
+            Notify();
+            return;
+        }
         var current = session;
         bool wasPlaying = IsPlaying;
         bool ok = false;
@@ -372,7 +438,7 @@ internal sealed class MediaService : Observable
     /// <summary>Brings the window the sound comes from to the front.</summary>
     public bool RevealSource()
     {
-        var id = session?.SourceAppUserModelId;
+        var id = session?.SourceAppUserModelId ?? (audioOnly is not null ? audioOnly + ".exe" : null);
         if (string.IsNullOrEmpty(id)) return false;
         Support.Log($"media: reveal {id}");
         return SourceWindow.Reveal(id, Title);
@@ -398,6 +464,7 @@ internal sealed class MediaService : Observable
     {
         if (string.IsNullOrEmpty(id)) return "";
         var lower = id.ToLowerInvariant();
+        if (lower == "browser") return L10n.T("Yandex Browser");
         if (lower.Contains("chrome")) return "Chrome";
         if (lower.Contains("msedge")) return "Edge";
         if (lower.Contains("firefox") || lower == "308046b0af4a39cb") return "Firefox";

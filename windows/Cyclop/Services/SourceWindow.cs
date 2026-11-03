@@ -42,6 +42,32 @@ internal static class SourceWindow
         return false;
     }
 
+    /// <summary>The title of the process's window used last — for a browser,
+    /// its open tab's.</summary>
+    public static string? TopTitle(string process)
+    {
+        string? found = null;
+        var processNames = new Dictionary<uint, string>();
+        EnumWindows((hwnd, _) =>
+        {
+            if (!IsWindowVisible(hwnd) || GetWindow(hwnd, GW_OWNER) != IntPtr.Zero || IsCloaked(hwnd)) return true;
+            int length = GetWindowTextLength(hwnd);
+            if (length == 0) return true;
+            GetWindowThreadProcessId(hwnd, out var pid);
+            if (!processNames.TryGetValue(pid, out var name))
+            {
+                try { name = Process.GetProcessById((int)pid).ProcessName; } catch { name = ""; }
+                processNames[pid] = name;
+            }
+            if (!string.Equals(name, process, StringComparison.OrdinalIgnoreCase)) return true;
+            var text = new StringBuilder(length + 1);
+            GetWindowText(hwnd, text, text.Capacity);
+            found = text.ToString();
+            return false;
+        }, IntPtr.Zero);
+        return found;
+    }
+
     static IntPtr Find(string appId, string? title)
     {
         var names = ProcessNames(appId);
