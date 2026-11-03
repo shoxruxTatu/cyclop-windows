@@ -232,6 +232,16 @@ public class TranslatorTests
     }
 
     [Fact]
+    public void MyMemoryIgnoresWellRatedTranslationsOfOtherSentences()
+    {
+        // Real answer for "Let's meet tomorrow at ten and plan the next video."
+        var json = "{\"responseData\":{\"translatedText\":\"Давайте встретимся завтра в десять и спланируем следующий ролик.\",\"match\":0.85},\"responseStatus\":200," +
+                   "\"matches\":[{\"translation\":\"Давайте встретимся завтра в десять и спланируем следующий ролик.\",\"quality\":70,\"match\":0.85}," +
+                   "{\"translation\":\"Важно оценивать результаты работы над ASO.\",\"quality\":\"74\",\"match\":0.21}]}";
+        Assert.Equal("Давайте встретимся завтра в десять и спланируем следующий ролик.", Translator.ParseResponse(json));
+    }
+
+    [Fact]
     public void ParsesGoogleSentences()
     {
         var json = "[[[\"hi how are you doing?\\n\",\"привет как твои дела?\\n\",null],[\"second line\",\"вторая строка\",null]],null,\"ru\"]";

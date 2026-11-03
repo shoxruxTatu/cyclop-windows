@@ -172,7 +172,8 @@ public sealed class Translator : Observable
 
     /// <summary>The best of MyMemory's candidates, not the first: the first
     /// is the closest memory entry, whoever wrote it. Highest rated quality
-    /// wins; the headline answer only when nothing is rated.</summary>
+    /// wins among the candidates for this very text; the headline answer only
+    /// when nothing is rated.</summary>
     internal static string ParseResponse(string json)
     {
         using var doc = JsonDocument.Parse(json);
@@ -184,9 +185,12 @@ public sealed class Translator : Observable
             foreach (var m in matches.EnumerateArray())
             {
                 if (!m.TryGetProperty("translation", out var candidate) || candidate.GetString() is not { Length: > 0 } translation) continue;
-                double quality = m.TryGetProperty("quality", out var q)
-                    ? q.ValueKind == JsonValueKind.Number ? q.GetDouble() : double.TryParse(q.GetString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 0
-                    : 0;
+                // "match" is how alike the stored source is to the text asked.
+                // The memory also offers other people's sentences that merely
+                // share a few words — "plan the next video" came back as a
+                // well-rated line about ASO keywords, a 21 % match.
+                if (Number(m, "match") is { } match && match < MinimumMatch) continue;
+                double quality = Number(m, "quality") ?? 0;
                 if (quality > bestQuality) { bestQuality = quality; best = translation; }
             }
             if (best is not null && bestQuality > 0) return WebUtility.HtmlDecode(best);
@@ -202,6 +206,17 @@ public sealed class Translator : Observable
             throw new InvalidOperationException(string.IsNullOrWhiteSpace(details) ? translated : details);
         }
         return WebUtility.HtmlDecode(translated);
+    }
+
+    /// <summary>MyMemory's own machine translation comes back as an 85 % match.</summary>
+    const double MinimumMatch = 0.85;
+
+    /// <summary>A number MyMemory sends either as a number or as a string.</summary>
+    static double? Number(JsonElement element, string name)
+    {
+        if (!element.TryGetProperty(name, out var value)) return null;
+        if (value.ValueKind == JsonValueKind.Number) return value.GetDouble();
+        return double.TryParse(value.GetString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : null;
     }
 
     /// <summary>The API takes 500 bytes a request. Lines travel whole when

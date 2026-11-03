@@ -6,9 +6,12 @@ namespace Cyclop;
 /// </summary>
 public static class Support
 {
-    /// <summary>The folder itself, created on first use.</summary>
+    /// <summary>The folder itself, created on first use. <c>CYCLOP_DATA</c>
+    /// puts it elsewhere — a clean profile for demo shots, without touching
+    /// the real notes, snippets and calendars.</summary>
     public static string Folder { get; } = Create(
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Cyclop"));
+        Environment.GetEnvironmentVariable("CYCLOP_DATA") is { Length: > 0 } custom ? custom
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Cyclop"));
 
     /// <summary>A file inside it, with the folder guaranteed to exist.</summary>
     public static string File(string name) => Path.Combine(Folder, name);
