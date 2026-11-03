@@ -6,10 +6,13 @@
 //   random number the app made on first launch; no IP or anything else about
 //   the user is stored. Without an id (count switched off) nothing is stored.
 //
-// GET /download?arch=x64|arm64
-//   Redirects to the newest exe and counts the download (per day and
-//   architecture, nothing else). The website's download button points here, so
-//   it never needs editing when a version comes out.
+// GET /download?arch=x64|arm64|mac
+//   Sends the newest build as a file download from this address — the browser
+//   saves it straight away instead of sending the visitor to GitHub — and
+//   counts it (per day and platform, nothing else). x64 and arm64 are this
+//   project's Windows releases; mac is the original Cyclop for macOS, by Adil
+//   Kalikbergenov (MIT), from its own GitHub releases. The website's buttons
+//   point here, so they never need editing when a version comes out.
 //
 // GET /stats
 //   Users per day, week and month, versions, new installs. Behind a password
@@ -75,62 +78,113 @@ async function check(url, env, ctx) {
   return json(await latest(env, ctx, arch));
 }
 
-/// The newest release for one architecture, cached for ten minutes: GitHub
-/// allows an unauthenticated client 60 API calls an hour.
+/// The newest release for one architecture, cached for ten minutes.
+///
+/// Read from github.com's own "latest release" redirect and download links,
+/// not the API: the API allows 60 unauthenticated calls an hour per address,
+/// and Cloudflare's outgoing addresses are shared with countless other sites —
+/// the limit is usually spent before this worker asks. The API stays as the
+/// fallback for when the newest release is not a Windows one.
 async function latest(env, ctx, arch) {
   const cache = caches.default;
-  const key = new Request(`https://cache.cyclop/latest/${env.GITHUB_REPO}/${arch}`);
+  const key = new Request(`https://cache.cyclop/v2/latest/${env.GITHUB_REPO}/${arch}`);
   const hit = await cache.match(key);
   if (hit) return hit.json();
 
+  let answer = { version: null };
+  const name = `Cyclop-win-${arch}.exe`;
+  const tag = await latestTag(env.GITHUB_REPO);
+  if (tag && tag.startsWith("win-v")) {
+    answer = await fromTag(env.GITHUB_REPO, tag, name);
+  } else {
+    answer = await fromApi(env, name);
+  }
+  remember(ctx, key, answer);
+  return answer;
+}
+
+async function latestTag(repo) {
+  const response = await fetch(`https://github.com/${repo}/releases/latest`, {
+    redirect: "manual", headers: { "user-agent": "cyclop-updates" },
+  });
+  const match = (response.headers.get("location") || "").match(/\/releases\/tag\/([^/?#]+)$/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+async function fromTag(repo, tag, name) {
+  const url = `https://github.com/${repo}/releases/download/${tag}/${name}`;
+  const sum = await fetch(`${url}.sha256`, { headers: { "user-agent": "cyclop-updates" } });
+  if (!sum.ok) return { version: null };
+  const sha256 = ((await sum.text()).match(/[0-9a-f]{64}/i) || [""])[0].toLowerCase();
+  return sha256 ? { version: tag.slice("win-v".length), url, sha256, notes: null } : { version: null };
+}
+
+async function fromApi(env, name) {
   const headers = { "user-agent": "cyclop-updates", accept: "application/vnd.github+json" };
   if (env.GITHUB_TOKEN) headers.authorization = `Bearer ${env.GITHUB_TOKEN}`;
   const response = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/releases?per_page=20`, { headers });
-  let answer = { version: null };
-  if (response.ok) {
-    const releases = await response.json();
-    const release = releases.find((r) => !r.draft && !r.prerelease && r.tag_name.startsWith("win-v"));
-    if (release) {
-      const name = `Cyclop-win-${arch}.exe`;
-      const exe = release.assets.find((a) => a.name === name);
-      const sum = release.assets.find((a) => a.name === `${name}.sha256`);
-      if (exe && sum) {
-        const text = await (await fetch(sum.browser_download_url, { headers: { "user-agent": "cyclop-updates" } })).text();
-        const sha256 = (text.match(/[0-9a-f]{64}/i) || [""])[0].toLowerCase();
-        if (sha256) {
-          answer = {
-            version: release.tag_name.slice("win-v".length),
-            url: exe.browser_download_url,
-            sha256,
-            notes: (release.body || "").slice(0, 1000),
-          };
-        }
-      }
-    }
-  }
-  ctx.waitUntil(cache.put(key, new Response(JSON.stringify(answer), {
-    headers: { "content-type": "application/json", "cache-control": `max-age=${CACHE_SECONDS}` },
+  if (!response.ok) return { version: null };
+  const release = (await response.json()).find((r) => !r.draft && !r.prerelease && r.tag_name.startsWith("win-v"));
+  return release ? fromTag(env.GITHUB_REPO, release.tag_name, name) : { version: null };
+}
+
+/// An answer is kept ten minutes; "nothing found" only one, so a hiccup at
+/// GitHub does not hide a release for long.
+function remember(ctx, key, answer) {
+  const seconds = answer.url ? CACHE_SECONDS : 60;
+  ctx.waitUntil(caches.default.put(key, new Response(JSON.stringify(answer), {
+    headers: { "content-type": "application/json", "cache-control": `max-age=${seconds}` },
   })));
-  return answer;
 }
 
 // MARK: - Download
 
+const MAC_REPO = "akalikbergenov/cyclop";
+
 async function download(url, env, ctx) {
-  const arch = ARCHES.includes(url.searchParams.get("arch")) ? url.searchParams.get("arch") : "x64";
-  const release = await latest(env, ctx, arch);
-  if (!release.url) {
-    return Response.redirect(`https://github.com/${env.GITHUB_REPO}/releases`, 302);
+  const wanted = url.searchParams.get("arch");
+  const platform = wanted === "mac" ? "mac" : ARCHES.includes(wanted) ? wanted : "x64";
+  const target = platform === "mac" ? await latestMac(env, ctx) : await latest(env, ctx, platform);
+  if (!target.url) {
+    const repo = platform === "mac" ? MAC_REPO : env.GITHUB_REPO;
+    return Response.redirect(`https://github.com/${repo}/releases`, 302);
   }
+  const upstream = await fetch(target.url, { headers: { "user-agent": "cyclop-updates" } });
+  if (!upstream.ok || !upstream.body) return Response.redirect(target.url, 302);
   ctx.waitUntil(
     env.DB.prepare(
       "INSERT INTO downloads (day, arch, n) VALUES (?1, ?2, 1) ON CONFLICT (day, arch) DO UPDATE SET n = n + 1"
-    ).bind(today(), arch).run()
+    ).bind(today(), platform).run()
   );
-  return new Response(null, {
-    status: 302,
-    headers: { location: release.url, "cache-control": "no-store", "access-control-allow-origin": "*" },
-  });
+  const name = platform === "mac" ? `Cyclop-${target.version}.dmg` : "Cyclop.exe";
+  const headers = {
+    "content-type": platform === "mac" ? "application/x-apple-diskimage" : "application/vnd.microsoft.portable-executable",
+    "content-disposition": `attachment; filename="${name}"`,
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff",
+  };
+  const length = upstream.headers.get("content-length");
+  if (length) headers["content-length"] = length;
+  // The body is streamed through as it arrives, never held in memory.
+  return new Response(upstream.body, { status: 200, headers });
+}
+
+/// The newest .dmg of the original macOS app, found the same way: its tag
+/// from the "latest" redirect, the file named after the version.
+async function latestMac(env, ctx) {
+  const key = new Request(`https://cache.cyclop/v2/latest/${MAC_REPO}/mac`);
+  const hit = await caches.default.match(key);
+  if (hit) return hit.json();
+  let answer = { version: null };
+  const tag = await latestTag(MAC_REPO);
+  if (tag) {
+    const version = tag.replace(/^v/, "");
+    const url = `https://github.com/${MAC_REPO}/releases/download/${tag}/Cyclop-${version}.dmg`;
+    const head = await fetch(url, { method: "HEAD", headers: { "user-agent": "cyclop-updates" } });
+    if (head.ok) answer = { version, url };
+  }
+  remember(ctx, key, answer);
+  return answer;
 }
 
 // MARK: - Stats
@@ -176,10 +230,13 @@ async function stats(request, env) {
   const downloads = await all(
     "SELECT day, SUM(n) AS n FROM downloads WHERE day >= ?1 GROUP BY day ORDER BY day", daysAgo(29));
   const downloadsTotal = (await one("SELECT SUM(n) AS n FROM downloads")).n || 0;
+  const platforms = await all(
+    "SELECT CASE arch WHEN 'mac' THEN 'Mac' WHEN 'arm64' THEN 'Windows ARM' ELSE 'Windows x64' END AS arch, " +
+    "SUM(n) AS n FROM downloads GROUP BY arch ORDER BY n DESC");
   const arches = await all(
     "SELECT arch, COUNT(DISTINCT id) AS n FROM pings WHERE day >= ?1 GROUP BY arch ORDER BY n DESC", daysAgo(6));
 
-  return new Response(page({ dau, wau, mau, total, daily, fresh, versions, arches, downloads, downloadsTotal }), {
+  return new Response(page({ dau, wau, mau, total, daily, fresh, versions, arches, downloads, downloadsTotal, platforms }), {
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
   });
 }
@@ -245,6 +302,9 @@ ${bars(s.downloads, "Скачивания с сайта по дням")}
 <div class="grid2" style="margin-top:12px">
 ${table(s.versions, "version", "Версии за 7 дней")}
 ${table(s.arches, "arch", "Архитектура за 7 дней")}
+</div>
+<div class="grid2" style="margin-top:12px">
+${table(s.platforms, "arch", "Скачивания с сайта по платформам, всего")}
 </div>
 </main></body></html>`;
 }

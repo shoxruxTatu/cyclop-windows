@@ -223,11 +223,14 @@
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.4 10.4 4.4v7.1H3V5.4Zm0 13.2 7.4 1v-7.1H3v6.1Zm8.3 1.1L21 21v-8.5h-9.7v7.2Zm0-15.4v7.2H21V3l-9.7 1.3Z"/></svg>
         <span data-i18n="hero.download">Скачать для Windows</span>
       </a>
-      <a class="btn ghost" href="#install" data-i18n="hero.how">Как установить</a>
+      <a class="btn ghost" id="download-mac" href="https://cyclop-updates.cyclop-updates.workers.dev/download?arch=mac">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8c1.3 0 2.1-1.2 2.9-2.4.9-1.3 1.3-2.7 1.3-2.7s-2.4-1-2.4-3.9ZM14 5.4c.6-.8 1.1-1.9 1-3-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.9 1 .1 2.1-.5 2.7-1.3Z"/></svg>
+        <span data-i18n="hero.mac">Скачать для Mac</span>
+      </a>
     </div>
     <div class="meta"><span id="version" data-i18n="hero.meta">Windows 10 и 11 · один файл, без установки</span> ·
       <a id="other-arch" href="https://cyclop-updates.cyclop-updates.workers.dev/download?arch=arm64" data-i18n="hero.arm">версия для ARM</a></div>
-    <div class="notwin" id="notwin" data-i18n="hero.notwin">Cyclop — программа для Windows. Откройте эту страницу на компьютере с Windows, чтобы скачать.</div>
+    <div class="notwin" id="notwin"></div>
 
     <div class="stage" id="stage" aria-label="Демонстрация панели" role="img">
       <div class="win"></div><div class="win b"></div>
@@ -331,7 +334,7 @@
     <div class="steps">
       <div class="step reveal">
         <h3 data-i18n="i.1.t">Скачайте</h3>
-        <p data-i18n="i.1.d">Нажмите «Скачать для Windows» вверху страницы. Файл Cyclop-win-x64.exe окажется в папке «Загрузки».</p>
+        <p data-i18n="i.1.d">Нажмите «Скачать для Windows» вверху страницы — файл Cyclop.exe сразу сохранится в папку «Загрузки».</p>
       </div>
       <div class="step reveal">
         <h3 data-i18n="i.2.t">Разрешите запуск</h3>
@@ -381,7 +384,7 @@
       <details><summary data-i18n="q.5.q">Как удалить?</summary>
         <p data-i18n-html="q.5.a">Выключите «Запускать при входе» в настройках, выйдите из Cyclop через значок в трее и удалите файл Cyclop.exe. Настройки и заметки лежат в папке <code>%APPDATA%\Cyclop</code> — её тоже можно удалить.</p></details>
       <details><summary data-i18n="q.6.q">А есть версия для Mac?</summary>
-        <p data-i18n-html="q.6.a">Cyclop родился на macOS — оригинальная версия для MacBook с чёлкой: <a href="https://github.com/akalikbergenov/cyclop">github.com/akalikbergenov/cyclop</a>.</p></details>
+        <p data-i18n-html="q.6.a">Да — кнопка «Скачать для Mac» вверху страницы. Это оригинальный Cyclop, с которого началась Windows-версия, автор — Adil Kalikbergenov (<a href="https://github.com/akalikbergenov/cyclop">github.com/akalikbergenov/cyclop</a>). Нужна macOS 15 или новее, работает и на MacBook с чёлкой, и без неё. При первом запуске macOS спросит разрешения: Системные настройки → Конфиденциальность и безопасность → «Всё равно открыть».</p></details>
     </div>
   </section>
 
@@ -412,7 +415,7 @@ const EN = {
   "hero.lead": "Rest the pointer on the thin strip at the top centre of your screen and a panel unfolds: music, files, clipboard history, screenshots and seven more handy tabs. Move away — it's gone.",
   "hero.download": "Download for Windows", "hero.how": "How to install",
   "hero.meta": "Windows 10 and 11 · a single file, nothing to install", "hero.arm": "ARM version",
-  "hero.notwin": "Cyclop is a Windows app. Open this page on a Windows PC to download it.",
+  "hero.mac": "Download for Mac",
   "f.eyebrow": "Features", "f.title": "Eleven tabs, not a single extra window",
   "f.sub": "The panel never steals focus from the app you're working in, and costs nothing while it's closed.",
   "f.music.t": "Music from anywhere", "f.music.d": "Spotify, Media Player, a film in a browser tab — artwork, seeking, pause, next track. Click the artwork to jump to the window that's playing.",
@@ -426,7 +429,7 @@ const EN = {
   "f.lock.t": "Keyboard lock", "f.lock.d": "Wipe the keys and the screen without typing anything. Hold Esc to unlock.",
   "i.eyebrow": "Install", "i.title": "Three steps, one minute",
   "i.sub": "Cyclop is a single file. Nothing to install, and it keeps itself up to date.",
-  "i.1.t": "Download", "i.1.d": "Click “Download for Windows” at the top. Cyclop-win-x64.exe lands in your Downloads folder.",
+  "i.1.t": "Download", "i.1.d": "Click “Download for Windows” at the top — Cyclop.exe is saved to your Downloads folder right away.",
   "i.2.t": "Allow it to run", "i.2.d": "Windows warns about apps from small developers. Click “More info”, then “Run anyway” — you only do this once.",
   "i.2.box": "Windows protected your PC", "i.2.more": "More info", "i.2.run": "Run anyway", "i.2.no": "Don't run",
   "i.3.t": "Hover the strip", "i.3.d": "A thin black strip appears at the top centre of the screen. Rest the pointer on it and the panel opens. The Cyclop icon also shows up in the tray by the clock.",
@@ -440,7 +443,7 @@ const EN = {
   "q.3.q": "What are the requirements?", "q.3.a": "Windows 10 (version 2004 or later) or Windows 11, a regular PC or Windows on ARM. About 70 MB of disk space.",
   "q.4.q": "How do I make it start with Windows?", "q.4.a": "Open the panel → Settings tab (the gear) → “Launch at Login”.",
   "q.5.q": "How do I uninstall it?", "q.5.a": "Turn off “Launch at Login” in Settings, quit Cyclop from the tray icon and delete Cyclop.exe. Settings and notes live in <code>%APPDATA%\\Cyclop</code> — you can delete that folder too.",
-  "q.6.q": "Is there a Mac version?", "q.6.a": "Cyclop was born on macOS — the original for MacBooks with a notch: <a href=\"https://github.com/akalikbergenov/cyclop\">github.com/akalikbergenov/cyclop</a>.",
+  "q.6.q": "Is there a Mac version?", "q.6.a": "Yes — the “Download for Mac” button at the top. It is the original Cyclop the Windows version grew from, by Adil Kalikbergenov (<a href=\"https://github.com/akalikbergenov/cyclop\">github.com/akalikbergenov/cyclop</a>). It needs macOS 15 or later and works on MacBooks with and without a notch. On first launch macOS asks for permission: System Settings → Privacy & Security → “Open Anyway”.",
   "s.title": "Enjoying Cyclop?", "s.d": "Cyclop is made by one person in their spare time. A donation helps ship new versions.", "s.donate": "Support the author",
   "ft.left": "© Cyclop for Windows — <a href=\"https://www.instagram.com/shoxrux.edit/\">@shoxrux.edit</a>. Based on <a href=\"https://github.com/akalikbergenov/cyclop\">Cyclop for macOS</a> (MIT).",
   "ft.all": "All versions",
@@ -466,6 +469,7 @@ function setLang(next) {
   });
   document.querySelectorAll(".lang button").forEach(b => b.classList.toggle("on", b.dataset.lang === next));
   showVersion();
+  if (typeof showNote === "function") showNote();
   try { localStorage.setItem("lang", next); } catch (e) {}
 }
 document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => setLang(b.dataset.lang)));
@@ -489,11 +493,41 @@ fetch(SERVER + "/v1/check?v=0.0.0&arch=x64").then(r => r.json()).then(j => {
   if (j.version) { latestVersion = j.version; showVersion(); }
 }).catch(() => {});
 
-// Windows on ARM gets the ARM build; everyone else x64, with the other a click away.
+const NOTES = {
+  mac: {
+    ru: "Для Mac — оригинальный Cyclop, macOS 15 и новее. При первом запуске: Системные настройки → Конфиденциальность и безопасность → «Всё равно открыть».",
+    en: "On a Mac you get the original Cyclop, macOS 15 or later. On first launch: System Settings → Privacy & Security → “Open Anyway”.",
+  },
+  phone: {
+    ru: "Cyclop — программа для компьютера. Откройте эту страницу на ПК с Windows или на Mac, чтобы скачать.",
+    en: "Cyclop is a desktop app. Open this page on a Windows PC or a Mac to download it.",
+  },
+};
+let platformNote = null;
+function showNote() {
+  const box = document.getElementById("notwin");
+  if (!platformNote) { box.style.display = "none"; return; }
+  box.textContent = NOTES[platformNote][lang];
+  box.style.display = "block";
+}
+
+// Windows on ARM gets the ARM build, everyone else x64; a Mac visitor sees the
+// Mac button first; a phone is told to come back from a computer.
 async function detectArch() {
   const ua = navigator.userAgent;
   const isWindows = /Windows/i.test(ua) || navigator.userAgentData?.platform === "Windows";
-  if (!isWindows) document.getElementById("notwin").style.display = "block";
+  const isPhone = /Android|iPhone|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const isMac = !isPhone && (/Macintosh|Mac OS X/.test(ua) || navigator.userAgentData?.platform === "macOS");
+  if (isMac) {
+    const win = document.getElementById("download"), mac = document.getElementById("download-mac");
+    win.classList.replace("primary", "ghost");
+    mac.classList.replace("ghost", "primary");
+    win.parentNode.insertBefore(mac, win);
+    platformNote = "mac";
+  } else if (isPhone || !isWindows) {
+    platformNote = "phone";
+  }
+  showNote();
   let arm = false;
   try {
     const v = await navigator.userAgentData?.getHighEntropyValues(["architecture"]);
