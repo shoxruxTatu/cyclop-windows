@@ -284,7 +284,8 @@ internal sealed class PanelWindow : Window, IPanelHost
         if (!done) return;
         CompositionTarget.Rendering -= OnFrame;
         animating = false;
-        if (!IsOpen)
+        if (IsOpen) body.Height = targetHeight;
+        else
         {
             var collapsed = onCollapsed;
             onCollapsed = null;
@@ -394,8 +395,10 @@ internal sealed class PanelWindow : Window, IPanelHost
         if (IsOpen)
         {
             targetHeight = Theme.BodyHeight(now.WantsTallBody());
+            // Growing, the content gets its room at once; shrinking, it keeps
+            // it until the shape has folded up to it (see OnFrame), or a short
+            // tab after a tall one stays laid out tall and is cut off.
             if (targetHeight > body.Height) body.Height = targetHeight;
-            else Dispatcher.BeginInvoke(DispatcherPriority.Background, () => { if (!animating) body.Height = targetHeight; });
             StartAnimation();
             // The typing tab takes the keyboard on arrival; leaving it gives
             // the keyboard straight back to the window underneath.
