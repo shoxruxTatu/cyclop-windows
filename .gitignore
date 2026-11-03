@@ -21,3 +21,4 @@ windows/dist/
 windows/server/node_modules/
 windows/server/.wrangler/
 windows/server/.dev.vars
+windows/server/.stats-password

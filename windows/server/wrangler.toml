@@ -6,13 +6,13 @@ compatibility_date = "2025-01-01"
 
 [vars]
 # The GitHub repository the Windows releases are published in: "owner/name".
-GITHUB_REPO = "OWNER/REPO"
+GITHUB_REPO = "shoxruxTatu/cyclop-windows"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "cyclop-stats"
 # Printed by `npx wrangler d1 create cyclop-stats`.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "d2e6039a-93df-4808-a9b5-af75b2aa1c7f"
 
 # Secrets, set with `npx wrangler secret put NAME`, never written here:
 #   STATS_PASSWORD — the password of the /stats page
