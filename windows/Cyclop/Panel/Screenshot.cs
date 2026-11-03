@@ -119,7 +119,7 @@ internal sealed class ScreenshotTool
         int right = monitors.Max(m => m.Bounds.Right), bottom = monitors.Max(m => m.Bounds.Bottom);
         using var bitmap = new System.Drawing.Bitmap(right - left, bottom - top, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
         using (var g = System.Drawing.Graphics.FromImage(bitmap))
-            g.CopyFromScreen(left, top, 0, 0, bitmap.Size, System.Drawing.CopyPixelOperation.SourceCopy | System.Drawing.CopyPixelOperation.CaptureBlt);
+            g.CopyFromScreen(left, top, 0, 0, bitmap.Size, System.Drawing.CopyPixelOperation.SourceCopy);
         var handle = bitmap.GetHbitmap();
         try
         {
@@ -199,6 +199,8 @@ internal sealed class SelectionWindow : Window
     readonly IntPtr hwnd;
     readonly Grid root;
     readonly Path dim;
+    readonly Canvas guides;
+    readonly Rectangle guideAcrossShade, guideAcross, guideDownShade, guideDown;
     readonly Rectangle frame;
     readonly Border sizeLabel;
     readonly TextBlock sizeText, hint;
@@ -234,6 +236,20 @@ internal sealed class SelectionWindow : Window
         var picture = new Image { Source = image, Stretch = Stretch.Fill };
         RenderOptions.SetBitmapScalingMode(picture, BitmapScalingMode.NearestNeighbor);
         dim = new Path { Fill = new SolidColorBrush(Color.FromArgb(0x80, 0, 0, 0)), IsHitTestVisible = false };
+        // Lines across the display through the pointer: the system cross is a
+        // few thin pixels that get lost on a dimmed high-resolution screen.
+        // White on a dark edge, so they show over light and dark alike.
+        var shade = new SolidColorBrush(Color.FromArgb(0x90, 0, 0, 0));
+        var line = new SolidColorBrush(Color.FromArgb(0xE6, 0xFF, 0xFF, 0xFF));
+        guideAcrossShade = new Rectangle { Fill = shade, Height = 3 };
+        guideAcross = new Rectangle { Fill = line, Height = 1 };
+        guideDownShade = new Rectangle { Fill = shade, Width = 3 };
+        guideDown = new Rectangle { Fill = line, Width = 1 };
+        guides = new Canvas
+        {
+            IsHitTestVisible = false, Visibility = Visibility.Collapsed,
+            Children = { guideAcrossShade, guideDownShade, guideAcross, guideDown },
+        };
         frame = new Rectangle
         {
             Stroke = Brushes.White, StrokeThickness = 1, StrokeDashArray = new DoubleCollection { 4, 3 },
@@ -271,7 +287,7 @@ internal sealed class SelectionWindow : Window
         paletteBox.Visibility = Visibility.Collapsed;
         BuildToolbars();
 
-        root = new Grid { Children = { picture, dim, frame, ink, sizeLabel, hintBox, toolsBox, actionsBox, paletteBox } };
+        root = new Grid { Children = { picture, dim, guides, frame, ink, sizeLabel, hintBox, toolsBox, actionsBox, paletteBox } };
         Content = root;
 
         hwnd = new WindowInteropHelper(this).EnsureHandle();
@@ -282,8 +298,13 @@ internal sealed class SelectionWindow : Window
         root.MouseDown += OnDown;
         root.MouseMove += OnMove;
         root.MouseUp += OnUp;
+        root.MouseLeave += (_, _) => { if (anchor is null) guides.Visibility = Visibility.Collapsed; };
         PreviewKeyDown += OnKey;
-        Loaded += (_, _) => UpdateDim();
+        Loaded += (_, _) =>
+        {
+            UpdateDim();
+            if (root.IsMouseOver) PlaceGuides(Mouse.GetPosition(root));
+        };
     }
 
     public void Present(bool focus)
@@ -418,9 +439,23 @@ internal sealed class SelectionWindow : Window
             if (drawing is not null) ContinueStroke(e.GetPosition(ink));
             return;
         }
+        var point = e.GetPosition(root);
+        PlaceGuides(point);
         if (anchor is not { } start) return;
-        selection = new Rect(start, e.GetPosition(root));
+        selection = new Rect(start, point);
         UpdateDim();
+    }
+
+    void PlaceGuides(Point p)
+    {
+        double width = root.ActualWidth, height = root.ActualHeight;
+        guideAcrossShade.Width = guideAcross.Width = width;
+        guideDownShade.Height = guideDown.Height = height;
+        Canvas.SetTop(guideAcrossShade, p.Y - 1);
+        Canvas.SetTop(guideAcross, p.Y);
+        Canvas.SetLeft(guideDownShade, p.X - 1);
+        Canvas.SetLeft(guideDown, p.X);
+        guides.Visibility = Visibility.Visible;
     }
 
     void OnUp(object sender, MouseButtonEventArgs e)
@@ -496,6 +531,7 @@ internal sealed class SelectionWindow : Window
     void BeginEditing()
     {
         editing = true;
+        guides.Visibility = Visibility.Collapsed;
         Cursor = Cursors.Arrow;
         ink.Visibility = Visibility.Visible;
         ink.Margin = new Thickness(selection.X, selection.Y, 0, 0);
