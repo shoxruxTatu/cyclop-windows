@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Cyclop.Services;
 
 /// <summary>
-/// Keeps Cyclop current. Twenty seconds after launch and every six hours it
+/// Keeps Cyclop current. Twenty seconds after launch and every hour it
 /// asks the update server; a newer build is downloaded, checked against the
 /// release's SHA-256 and swapped in place of the running exe — Windows lets a
 /// running exe be renamed, so the old file steps aside, the new one takes its
@@ -20,7 +20,11 @@ namespace Cyclop.Services;
 /// </summary>
 internal sealed class UpdateService : Observable
 {
-    static readonly TimeSpan Interval = TimeSpan.FromHours(6);
+    /// <summary>Hourly: a release should reach people the same day, and one
+    /// small request an hour is nothing for the server or the PC.</summary>
+    static readonly TimeSpan Interval = TimeSpan.FromHours(1);
+    static readonly TimeSpan Retry = TimeSpan.FromMinutes(5);
+    System.Threading.Timer? retry;
 
     readonly ConfigStore config;
     readonly AppState state;
@@ -64,6 +68,7 @@ internal sealed class UpdateService : Observable
     public void Stop()
     {
         firstCheck?.Dispose();
+        retry?.Dispose();
         timer?.Dispose();
     }
 
@@ -104,7 +109,16 @@ internal sealed class UpdateService : Observable
         if (Busy) return;
         // Not mid-sentence, mid-screenshot or mid-take: the restart waits for
         // the next check rather than pull the panel away under the user.
-        if (!force && !canRestart()) return;
+        if (!force && !canRestart())
+        {
+            // Busy right now — the panel is open, a screenshot is being taken.
+            // Asked again in a few minutes, not at the next hourly check.
+            var ctx = System.Threading.SynchronizationContext.Current;
+            retry?.Dispose();
+            retry = new System.Threading.Timer(_ => ctx?.Post(_ => _ = InstallAsync(info, force: false), null),
+                null, Retry, System.Threading.Timeout.InfiniteTimeSpan);
+            return;
+        }
         Busy = true;
         Status = L10n.T("Downloading %@…", info.Version);
         Notify();
