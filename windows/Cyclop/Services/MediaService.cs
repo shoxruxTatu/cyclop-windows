@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -79,9 +80,10 @@ internal sealed class MediaService : Observable
             manager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
             if (!started) return;
             Support.Log("media sessions: manager ready");
-            manager.CurrentSessionChanged += (_, _) => dispatcher.BeginInvoke(PickSession);
-            manager.SessionsChanged += (_, _) => dispatcher.BeginInvoke(PickSession);
-            PickSession();
+            manager.CurrentSessionChanged += (_, _) => dispatcher.BeginInvoke(Refresh);
+            manager.SessionsChanged += (_, _) => dispatcher.BeginInvoke(() => { WatchAll(); Refresh(); });
+            WatchAll();
+            Refresh();
         }
         catch (Exception e)
         {
@@ -92,6 +94,7 @@ internal sealed class MediaService : Observable
     public void Stop()
     {
         started = false;
+        Unwatch();
         Attach(null);
         manager = null;
         SetActive(false);
@@ -103,33 +106,100 @@ internal sealed class MediaService : Observable
         ticker?.Stop();
         ticker = null;
         if (!active) return;
-        ticker = new DispatcherTimer(TimeSpan.FromSeconds(0.25), DispatcherPriority.Background, (_, _) => { if (IsPlaying) Notify(); }, dispatcher);
+        // Opening the panel looks again at what is playing — a missed event
+        // must never be the reason it says nothing is.
+        Refresh();
+        int tick = 0;
+        ticker = new DispatcherTimer(TimeSpan.FromSeconds(0.25), DispatcherPriority.Background, (_, _) =>
+        {
+            if (++tick % 8 == 0) Refresh();
+            else if (IsPlaying) Notify();
+        }, dispatcher);
         ticker.Start();
     }
 
-    /// <summary>The system's current session; failing that, whichever is
-    /// playing — the current one is sometimes a paused tab while music plays
-    /// in another app.</summary>
+    readonly List<GlobalSystemMediaTransportControlsSession> watched = new();
+
+    /// <summary>
+    /// Every session is listened to, not only the one on screen: a video that
+    /// starts in another browser tab must take over, and its start is an event
+    /// on its own session. Senders are not compared to the session on screen —
+    /// Windows can hand the same session over as a different object, and an
+    /// event dropped for that reason is a track that never shows up.
+    /// </summary>
+    void WatchAll()
+    {
+        Unwatch();
+        if (manager is null) return;
+        try
+        {
+            foreach (var s in manager.GetSessions())
+            {
+                s.PlaybackInfoChanged += OnAnyChange;
+                s.MediaPropertiesChanged += OnAnyChange;
+                s.TimelinePropertiesChanged += OnAnyChange;
+                watched.Add(s);
+            }
+        }
+        catch (Exception e) { Support.Log("media sessions: watch failed: " + e.Message); }
+    }
+
+    void Unwatch()
+    {
+        foreach (var s in watched)
+        {
+            try
+            {
+                s.PlaybackInfoChanged -= OnAnyChange;
+                s.MediaPropertiesChanged -= OnAnyChange;
+                s.TimelinePropertiesChanged -= OnAnyChange;
+            }
+            catch { }
+        }
+        watched.Clear();
+    }
+
+    void OnAnyChange(GlobalSystemMediaTransportControlsSession s, object e) => dispatcher.BeginInvoke(Refresh);
+
+    /// <summary>Picks the session again and re-reads it in full.</summary>
+    void Refresh()
+    {
+        if (manager is null) return;
+        PickSession();
+        if (session is null) return;
+        ReadPlayback();
+        ReadTimeline();
+        _ = ReadPropertiesAsync();
+    }
+
+    /// <summary>What is playing wins; then the system's current session if it
+    /// is paused rather than gone; then any paused one; then whatever the
+    /// system calls current.</summary>
     void PickSession()
     {
         if (manager is null) return;
         GlobalSystemMediaTransportControlsSession? pick = null;
         try
         {
-            pick = manager.GetCurrentSession();
-            var sessions = manager.GetSessions();
-            if (pick?.GetPlaybackInfo()?.PlaybackStatus != GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+            var current = manager.GetCurrentSession();
+            var sessions = manager.GetSessions().ToList();
+            static GlobalSystemMediaTransportControlsSessionPlaybackStatus? Status(GlobalSystemMediaTransportControlsSession s)
             {
-                var playing = sessions.FirstOrDefault(s =>
-                    s.GetPlaybackInfo()?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing);
-                if (playing is not null) pick = playing;
+                try { return s.GetPlaybackInfo()?.PlaybackStatus; } catch { return null; }
             }
-            pick ??= sessions.FirstOrDefault();
-            var summary = string.Join(", ", sessions.Select(s => $"{s.SourceAppUserModelId}={s.GetPlaybackInfo()?.PlaybackStatus}"));
+            const GlobalSystemMediaTransportControlsSessionPlaybackStatus Playing = GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+            const GlobalSystemMediaTransportControlsSessionPlaybackStatus Paused = GlobalSystemMediaTransportControlsSessionPlaybackStatus.Paused;
+            pick = (current is not null && Status(current) == Playing ? current : null)
+                   ?? sessions.FirstOrDefault(s => Status(s) == Playing)
+                   ?? (current is not null && Status(current) == Paused ? current : null)
+                   ?? sessions.FirstOrDefault(s => Status(s) == Paused)
+                   ?? current
+                   ?? sessions.FirstOrDefault();
+            var summary = string.Join(", ", sessions.Select(s => $"{s.SourceAppUserModelId}={Status(s)}"));
             if (summary != lastSummary)
             {
                 lastSummary = summary;
-                Support.Log($"media sessions: [{summary}] current={pick?.SourceAppUserModelId ?? "none"}");
+                Support.Log($"media sessions: [{summary}] picked={pick?.SourceAppUserModelId ?? "none"}");
             }
         }
         catch (Exception e) { Support.Log("media sessions: " + e.Message); }
@@ -138,12 +208,6 @@ internal sealed class MediaService : Observable
 
     void Attach(GlobalSystemMediaTransportControlsSession? next)
     {
-        if (session is not null)
-        {
-            session.MediaPropertiesChanged -= OnProperties;
-            session.PlaybackInfoChanged -= OnPlayback;
-            session.TimelinePropertiesChanged -= OnTimeline;
-        }
         session = next;
         if (session is null)
         {
@@ -159,23 +223,11 @@ internal sealed class MediaService : Observable
             Notify();
             return;
         }
-        session.MediaPropertiesChanged += OnProperties;
-        session.PlaybackInfoChanged += OnPlayback;
-        session.TimelinePropertiesChanged += OnTimeline;
         SourceName = FriendlyName(session.SourceAppUserModelId);
         ReadPlayback();
         ReadTimeline();
         _ = ReadPropertiesAsync();
     }
-
-    void OnProperties(GlobalSystemMediaTransportControlsSession s, MediaPropertiesChangedEventArgs e) =>
-        dispatcher.BeginInvoke(() => { if (ReferenceEquals(s, session)) _ = ReadPropertiesAsync(); });
-
-    void OnPlayback(GlobalSystemMediaTransportControlsSession s, PlaybackInfoChangedEventArgs e) =>
-        dispatcher.BeginInvoke(() => { if (ReferenceEquals(s, session)) { ReadPlayback(); PickSession(); } });
-
-    void OnTimeline(GlobalSystemMediaTransportControlsSession s, TimelinePropertiesChangedEventArgs e) =>
-        dispatcher.BeginInvoke(() => { if (ReferenceEquals(s, session)) ReadTimeline(); });
 
     void ReadPlayback()
     {
@@ -229,6 +281,8 @@ internal sealed class MediaService : Observable
             Notify();
 
             if (props.Thumbnail is null) { ArtworkPending = false; Notify(); return; }
+            // Same track, cover already shown: re-reading it would only make it blink.
+            if (sameTrack && Artwork is not null) return;
             using var stream = await props.Thumbnail.OpenReadAsync();
             using var input = stream.AsStreamForRead();
             var memory = new MemoryStream();
