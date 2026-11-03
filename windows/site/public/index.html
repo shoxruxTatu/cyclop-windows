@@ -7,7 +7,10 @@
 <meta name="description" content="Бесплатная панель вверху экрана Windows: музыка, полка файлов, история буфера обмена, скриншоты, заметки, календарь, перевод и курсы валют.">
 <meta property="og:title" content="Cyclop для Windows">
 <meta property="og:description" content="Музыка, файлы, буфер обмена и скриншоты — в одном движении курсора. Бесплатно.">
-<meta property="og:image" content="icon.png">
+<meta property="og:image" content="https://cyclop.cyclop-updates.workers.dev/shots/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -92,43 +95,33 @@
   .cursor { position: absolute; width: 2.1%; aspect-ratio: .7; z-index: 6; transition: left 1s cubic-bezier(.4,.1,.2,1), top 1s cubic-bezier(.4,.1,.2,1);
     filter: drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
 
+  /* The panel is the real thing: screenshots of each tab, cut to its shape. */
   .panel { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 15.5%; height: 1.3%;
     background: #000; border-radius: 0 0 6px 6px; overflow: hidden; z-index: 5;
     transition: width .5s cubic-bezier(.3,1.25,.4,1), height .5s cubic-bezier(.3,1.25,.4,1), border-radius .4s, box-shadow .4s; }
-  .panel.open { width: 72%; height: 40%; border-radius: 0 0 28px 28px; box-shadow: 0 24px 60px rgba(0,0,0,.6); }
-  .panel .inner { position: absolute; inset: 0; opacity: 0; transition: opacity .2s; padding: 3.2% 2.4% 2.6%; display: grid; grid-template-columns: 6% 1fr 6%; gap: 2.2%; font-size: clamp(7px, 1.25vw, 13px); }
-  .panel.open .inner { opacity: 1; transition: opacity .35s .22s; }
-  .ptitle { position: absolute; left: 2.6%; top: 4%; font-size: .72em; letter-spacing: .1em; font-weight: 700; color: rgba(255,255,255,.35); }
-  .rail { display: flex; flex-direction: column; gap: 6%; padding-top: 30%; align-items: center; }
-  .rail b { width: 100%; aspect-ratio: 1; border-radius: 22%; display: grid; place-items: center; color: rgba(255,255,255,.35); font-size: .95em; }
-  .rail b.on { background: rgba(255,255,255,.14); color: #fff; }
-  .pane { position: relative; padding-top: 4%; }
-  .tabpane { position: absolute; inset: 4% 0 0; opacity: 0; transform: scale(.97); transition: opacity .3s, transform .3s; display: flex; align-items: center; gap: 4%; }
-  .tabpane.on { opacity: 1; transform: none; }
-  .art { width: 28%; aspect-ratio: 1; border-radius: 12%; background: conic-gradient(from 210deg, #ff5f6d, #ffc371, #47cf73, #36a3ff, #a66cff, #ff5f6d);
-    box-shadow: 0 10px 24px rgba(0,0,0,.5); position: relative; }
-  .art::after { content: ""; position: absolute; inset: 34%; border-radius: 50%; background: #111; box-shadow: 0 0 0 4px rgba(255,255,255,.15); }
-  .track { flex: 1; }
-  .track h4 { margin: 0; font-size: 1.35em; letter-spacing: -.01em; }
-  .track p { margin: .2em 0 0; color: rgba(255,255,255,.55); font-size: .95em; }
-  .ctrls { display: flex; gap: 9%; justify-content: center; margin: 7% 0 6%; align-items: center; }
-  .ctrls i { font-style: normal; color: #fff; opacity: .9; }
-  .ctrls .pp { width: 2.6em; height: 2.6em; border-radius: 50%; background: rgba(255,255,255,.14); display: grid; place-items: center; }
-  .prog { height: 4px; border-radius: 4px; background: rgba(255,255,255,.1); overflow: hidden; }
-  .prog i { display: block; height: 100%; width: 38%; background: rgba(255,255,255,.85); animation: play 9s linear infinite; }
-  @keyframes play { from { width: 18%; } to { width: 72%; } }
-  .files { display: flex; gap: 3%; width: 100%; }
-  .file { flex: 1; text-align: center; color: rgba(255,255,255,.6); font-size: .8em; }
-  .file div { aspect-ratio: 1.3; border-radius: 10%; margin-bottom: 6%; }
-  .clips { width: 100%; display: flex; flex-direction: column; gap: 5%; }
-  .clips div { padding: 2.3% 3%; border-radius: 8px; background: rgba(255,255,255,.06); color: rgba(255,255,255,.8); font-size: .9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .shot { width: 100%; height: 100%; border-radius: 10px; position: relative; background: linear-gradient(135deg, #2b5876, #4e4376); overflow: hidden; }
-  .shot .sel { position: absolute; left: 22%; top: 18%; width: 46%; height: 56%; border: 1.5px dashed #fff; box-shadow: 0 0 0 999px rgba(0,0,0,.45); }
-  .shot .sz { position: absolute; left: 22%; top: 6%; font-size: .75em; background: rgba(20,20,20,.8); padding: .1em .5em; border-radius: 4px; }
-  .shot .tools { position: absolute; left: 70%; top: 18%; display: flex; flex-direction: column; gap: 4px; background: rgba(25,25,25,.95); padding: 4px; border-radius: 6px; }
-  .shot .tools i { width: 1.4em; height: 1.4em; border-radius: 4px; background: rgba(255,255,255,.12); }
-  .shot .tools i:first-child { background: var(--accent); }
-  .shot .arrow { position: absolute; left: 30%; top: 50%; width: 22%; height: 3px; background: #ff453a; transform: rotate(-24deg); transform-origin: left; }
+  .panel.open { width: var(--pw, 74%); height: var(--ph, 48%); border-radius: 0 0 3.4% 3.4% / 0 0 9.2% 9.2%; box-shadow: 0 24px 60px rgba(0,0,0,.6); }
+  .panel img { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity .25s .15s; }
+  .panel.open img.on { opacity: 1; }
+
+  /* The tour: every tab on a desktop like the one it was taken on. */
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 14px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chips button { flex: none; font: inherit; font-size: 14px; font-weight: 600; color: var(--muted); background: rgba(255,255,255,.04);
+    border: 1px solid var(--line); border-radius: 999px; padding: 8px 15px; cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+  .chips button:hover { color: var(--text); background: rgba(255,255,255,.08); }
+  .chips button.on { color: #fff; background: rgba(10,132,255,.22); border-color: rgba(10,132,255,.5); }
+  .screen { position: relative; aspect-ratio: 16 / 10; border-radius: 22px; overflow: hidden; border: 1px solid var(--line);
+    box-shadow: 0 40px 120px rgba(0,0,0,.6);
+    background: radial-gradient(900px 500px at 75% 100%, rgba(255,140,160,.22), transparent 70%), linear-gradient(135deg, #46285c, #8a4a68); }
+  .screen img { position: absolute; top: 0; left: 6%; width: 88%; height: auto; opacity: 0; transition: opacity .3s;
+    filter: drop-shadow(0 18px 36px rgba(0,0,0,.45)); }
+  .screen img:not(.on) { transition: none; }
+  .screen img.on { opacity: 1; }
+  .caption { color: var(--muted); font-size: 15px; margin: 16px 0 0; min-height: 3em; }
+  @media (max-width: 640px) {
+    .screen { aspect-ratio: 1.45; border-radius: 14px; }
+    .screen img { left: 0; width: 100%; }
+  }
 
   section { padding: 96px 0 0; }
   .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
@@ -206,13 +199,12 @@
   .reveal.in { opacity: 1; transform: none; }
   @media (prefers-reduced-motion: reduce) {
     .reveal { opacity: 1; transform: none; transition: none; }
-    .panel, .cursor, .tabpane, .prog i { transition: none !important; animation: none !important; }
+    .panel, .panel img, .cursor, .screen img { transition: none !important; }
   }
   @media (max-width: 640px) {
     .navlinks a { display: none; }
     .hero { padding-top: 28px; }
     .stage { border-radius: 14px; aspect-ratio: 4 / 3.4; }
-    .panel.open { width: 94%; height: 52%; }
     section { padding-top: 72px; }
   }
 </style>
@@ -224,6 +216,7 @@
     <a class="brand" href="#"><img src="icon.png" alt="" width="30" height="30">Cyclop</a>
     <div class="navlinks">
       <a href="#features" data-i18n="nav.features">Возможности</a>
+      <a href="#tour" data-i18n="nav.tour">Скриншоты</a>
       <a href="#install" data-i18n="nav.install">Установка</a>
       <a href="#faq" data-i18n="nav.faq">Вопросы</a>
       <div class="lang" role="group" aria-label="Language">
@@ -254,35 +247,11 @@
     <div class="stage" id="stage" aria-label="Демонстрация панели" role="img">
       <div class="win"></div><div class="win b"></div>
       <div class="panel" id="panel">
-        <span class="ptitle" id="ptitle">МУЗЫКА</span>
-        <div class="inner">
-          <div class="rail" id="railL"><b class="on">♫</b><b>▤</b><b>⧉</b><b>⌖</b><b>▦</b></div>
-          <div class="pane">
-            <div class="tabpane on" data-tab="music">
-              <div class="art"></div>
-              <div class="track">
-                <h4>Midnight City</h4><p>M83 — Hurry Up, We're Dreaming</p>
-                <div class="ctrls"><i>⏮</i><span class="pp"><i>⏸</i></span><i>⏭</i></div>
-                <div class="prog"><i></i></div>
-              </div>
-            </div>
-            <div class="tabpane" data-tab="shelf">
-              <div class="files">
-                <div class="file"><div style="background:linear-gradient(135deg,#2b5876,#4e4376)"></div>Снимок 10.42.png</div>
-                <div class="file"><div style="background:linear-gradient(135deg,#f7971e,#ffd200)"></div>Договор.pdf</div>
-                <div class="file"><div style="background:linear-gradient(135deg,#11998e,#38ef7d)"></div>Отчёт.xlsx</div>
-                <div class="file"><div style="background:linear-gradient(135deg,#ee0979,#ff6a00)"></div>Видео.mp4</div>
-              </div>
-            </div>
-            <div class="tabpane" data-tab="clip">
-              <div class="clips"><div>https://dalink.to/denkoozo</div><div>+998 90 123 45 67</div><div>Встреча в 15:00, переговорная 3</div><div>hello@example.com</div></div>
-            </div>
-            <div class="tabpane" data-tab="shot">
-              <div class="shot"><div class="sel"></div><span class="sz">550×290</span><div class="arrow"></div><div class="tools"><i></i><i></i><i></i><i></i></div></div>
-            </div>
-          </div>
-          <div class="rail"><b>✎</b><b>$</b><b>▭</b><b>⚙</b></div>
-        </div>
+        <img src="shots/shelf.webp" data-tab="shelf" alt="" class="on">
+        <img src="shots/clipboard.webp" data-tab="clipboard" alt="">
+        <img src="shots/calendar.webp" data-tab="calendar" alt="">
+        <img src="shots/translate.webp" data-tab="translate" alt="">
+        <img src="shots/notes.webp" data-tab="notes" alt="">
       </div>
       <svg class="cursor" id="cursor" viewBox="0 0 14 20" style="left:62%;top:64%"><path d="M1 1v15l4-4 3 7 3-1-3-7h6L1 1Z" fill="#fff" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/></svg>
       <div class="taskbar"><span></span><span></span><span></span><span></span><span></span><span></span></div>
@@ -341,6 +310,39 @@
         <h3 data-i18n="f.lock.t">Блокировка клавиатуры</h3>
         <p data-i18n="f.lock.d">Протрите клавиши и экран, не нажав ничего лишнего. Снимается удержанием Esc.</p>
       </div>
+    </div>
+  </section>
+
+  <section id="tour">
+    <div class="reveal">
+      <div class="eyebrow" data-i18n="t.eyebrow">Скриншоты</div>
+      <h2 data-i18n="t.title">Так это выглядит на Windows</h2>
+      <p class="sub" data-i18n="t.sub">Настоящие снимки программы, без дорисовок. Выберите вкладку.</p>
+    </div>
+    <div class="reveal">
+      <div class="chips" role="tablist" aria-label="Вкладки">
+        <button type="button" role="tab" data-shot="shelf" class="on" aria-selected="true" data-i18n="t.shelf">Полка</button>
+        <button type="button" role="tab" data-shot="clipboard" aria-selected="false" data-i18n="t.clipboard">Буфер</button>
+        <button type="button" role="tab" data-shot="snippets" aria-selected="false" data-i18n="t.snippets">Заготовки</button>
+        <button type="button" role="tab" data-shot="calendar" aria-selected="false" data-i18n="t.calendar">Календарь</button>
+        <button type="button" role="tab" data-shot="translate" aria-selected="false" data-i18n="t.translate">Перевод</button>
+        <button type="button" role="tab" data-shot="notes" aria-selected="false" data-i18n="t.notes">Заметки</button>
+        <button type="button" role="tab" data-shot="currency" aria-selected="false" data-i18n="t.currency">Валюта</button>
+        <button type="button" role="tab" data-shot="teleprompter" aria-selected="false" data-i18n="t.teleprompter">Суфлёр</button>
+        <button type="button" role="tab" data-shot="settings" aria-selected="false" data-i18n="t.settings">Настройки</button>
+      </div>
+      <div class="screen">
+        <img src="shots/shelf.webp" data-shot="shelf" width="1020" height="380" loading="lazy" alt="Вкладка «Полка» в Cyclop" data-i18n-alt="t.shelf.alt" class="on">
+        <img src="shots/clipboard.webp" data-shot="clipboard" width="1020" height="380" loading="lazy" alt="Вкладка «Буфер» в Cyclop" data-i18n-alt="t.clipboard.alt">
+        <img src="shots/snippets.webp" data-shot="snippets" width="1020" height="380" loading="lazy" alt="Вкладка «Заготовки» в Cyclop" data-i18n-alt="t.snippets.alt">
+        <img src="shots/calendar.webp" data-shot="calendar" width="1020" height="380" loading="lazy" alt="Вкладка «Календарь» в Cyclop" data-i18n-alt="t.calendar.alt">
+        <img src="shots/translate.webp" data-shot="translate" width="1020" height="380" loading="lazy" alt="Вкладка «Перевод» в Cyclop" data-i18n-alt="t.translate.alt">
+        <img src="shots/notes.webp" data-shot="notes" width="1020" height="380" loading="lazy" alt="Вкладка «Заметки» в Cyclop" data-i18n-alt="t.notes.alt">
+        <img src="shots/currency.webp" data-shot="currency" width="1020" height="380" loading="lazy" alt="Вкладка «Валюта» в Cyclop" data-i18n-alt="t.currency.alt">
+        <img src="shots/teleprompter.webp" data-shot="teleprompter" width="1020" height="668" loading="lazy" alt="Вкладка «Суфлёр» в Cyclop" data-i18n-alt="t.teleprompter.alt">
+        <img src="shots/settings.webp" data-shot="settings" width="1020" height="668" loading="lazy" alt="Вкладка «Настройки» в Cyclop" data-i18n-alt="t.settings.alt">
+      </div>
+      <p class="caption" id="tour-cap" aria-live="polite"></p>
     </div>
   </section>
 
@@ -492,10 +494,35 @@ const EN = {
   "fb.text": "What happened, or what should Cyclop do?", "fb.contact": "Telegram @name or email — if you want an answer",
   "fb.sending": "Sending…", "fb.ok": "Thank you! Your message has been sent.", "fb.err": "Could not send. Please try again in a minute.",
   "fb.short": "Write at least a few words.",
-  "demo": { music: "MUSIC", shelf: "SHELF", clip: "CLIPBOARD", shot: "SCREENSHOT" },
+  "nav.tour": "Screenshots",
+  "t.eyebrow": "Screenshots", "t.title": "This is what it looks like on Windows",
+  "t.sub": "Real screenshots of the app, nothing drawn in. Pick a tab.",
+  "t.shelf": "Shelf", "t.clipboard": "Clipboard", "t.snippets": "Snippets", "t.calendar": "Calendar", "t.translate": "Translate",
+  "t.notes": "Notes", "t.currency": "Currency", "t.teleprompter": "Teleprompter", "t.settings": "Settings",
   "version": "Version {v} · Windows 10 and 11 · a single file",
 };
-const RU_DEMO = { music: "МУЗЫКА", shelf: "ПОЛКА", clip: "БУФЕР", shot: "СКРИНШОТ" };
+
+// What each screenshot in the tour shows.
+const CAPTIONS = {
+  shelf: ["Перетащите файлы на полку, перейдите в другую папку и вытащите их оттуда. Ctrl+клик — выбрать несколько и перетащить вместе.",
+          "Drop files on the shelf, go to another folder and drag them out there. Ctrl+click picks several to drag together."],
+  clipboard: ["Последние 40 копирований — клик возвращает любое в буфер. Ссылки отмечены отдельным значком.",
+              "Your last 40 copies — click one to put it back on the clipboard. Links get their own icon."],
+  snippets: ["Почта, сайт, телефон, подпись — клик копирует. Поиск и «+» для новой заготовки.",
+             "Email, website, phone, signature — one click copies. Search, and “+” for a new snippet."],
+  calendar: ["Ближайшая встреча крупно, с отсчётом до начала, и всё, что дальше: сегодня и завтра.",
+             "The next meeting up front with a countdown, then what follows today and tomorrow."],
+  translate: ["Английский ↔ русский по мере набора. Кнопка справа копирует перевод.",
+              "English ↔ Russian as you type. The button on the right copies the translation."],
+  notes: ["Список заметок слева, текст справа. Всё сохраняется само.",
+          "Notes on the left, text on the right. Everything saves itself."],
+  currency: ["Курсы на сегодня, больше 150 валют. Стрелки ⇄ меняют валюты местами.",
+             "Today's rates for more than 150 currencies. The ⇄ arrows swap them."],
+  teleprompter: ["Суфлёр: крупный текст прямо под камерой. Скорость и размер — ползунками, карандаш — изменить текст.",
+                 "Teleprompter: large text right under the webcam. Sliders set speed and size; the pencil edits the text."],
+  settings: ["Автозапуск, значок в трее, задержка открытия и какие вкладки показывать в панели.",
+             "Launch at login, the tray icon, the opening delay and which tabs the panel shows."],
+};
 
 // The Russian text is the page itself; English is laid over it on request.
 const ru = {};
@@ -517,8 +544,14 @@ function setLang(next) {
     if (!ru["ph:" + k]) ru["ph:" + k] = el.placeholder;
     el.placeholder = next === "en" ? (EN[k] ?? ru["ph:" + k]) : ru["ph:" + k];
   });
+  document.querySelectorAll("[data-i18n-alt]").forEach(el => {
+    const k = el.dataset.i18nAlt;
+    if (!ru["alt:" + k]) ru["alt:" + k] = el.alt;
+    el.alt = next === "en" ? `The ${EN[k.replace(".alt", "")]} tab in Cyclop` : ru["alt:" + k];
+  });
   document.querySelectorAll(".lang button").forEach(b => b.classList.toggle("on", b.dataset.lang === next));
   showVersion();
+  if (typeof showCaption === "function") showCaption();
   if (typeof showNote === "function") showNote();
   try { localStorage.setItem("lang", next); } catch (e) {}
 }
@@ -594,34 +627,61 @@ async function detectArch() {
 }
 
 // The demo: the pointer goes up to the strip, the panel unfolds and walks
-// through a few tabs, the pointer leaves, the panel folds. Then again.
+// through a few tabs by their icons, the pointer leaves, the panel folds.
 const panel = document.getElementById("panel"), cursor = document.getElementById("cursor");
-const title = document.getElementById("ptitle");
-const tabs = ["music", "shelf", "clip", "shot"];
-const railIcons = document.querySelectorAll("#railL b");
+const stage = document.getElementById("stage");
+const shots = [...panel.querySelectorAll("img")];
+// Where each tab's icon sits in the screenshot, as a fraction of the panel.
+const ICONS = { shelf: [.042, .31], clipboard: [.042, .45], calendar: [.042, .73], translate: [.042, .87], notes: [.957, .24] };
+const SHOT_ASPECT = 1020 / 380;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-function moveCursor(x, y) { cursor.style.left = x + "%"; cursor.style.top = y + "%"; }
-function showTab(i) {
-  document.querySelectorAll(".tabpane").forEach(p => p.classList.toggle("on", p.dataset.tab === tabs[i]));
-  railIcons.forEach((b, j) => b.classList.toggle("on", j === i));
-  title.textContent = (lang === "en" ? EN.demo : RU_DEMO)[tabs[i]];
+let pw = 74, ph = 48;
+function sizePanel() {
+  pw = matchMedia("(max-width: 640px)").matches ? 94 : 74;
+  ph = pw * (stage.clientWidth / stage.clientHeight) / SHOT_ASPECT;
+  stage.style.setProperty("--pw", pw + "%");
+  stage.style.setProperty("--ph", ph + "%");
 }
+addEventListener("resize", sizePanel);
+function moveCursor(x, y) { cursor.style.left = x + "%"; cursor.style.top = y + "%"; }
+function pointAt(tab) {
+  const [fx, fy] = ICONS[tab];
+  moveCursor(50 - pw / 2 + pw * fx, ph * fy);
+}
+function showShot(tab) { shots.forEach(img => img.classList.toggle("on", img.dataset.tab === tab)); }
 async function demo() {
+  sizePanel();
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (reduce) { panel.classList.add("open"); showTab(0); moveCursor(50, 20); return; }
+  if (reduce) { panel.classList.add("open"); showShot("shelf"); moveCursor(62, 72); return; }
+  const order = shots.map(img => img.dataset.tab);
   while (true) {
-    showTab(0);
+    showShot(order[0]);
     moveCursor(50.5, 0.4); await sleep(1300);
-    panel.classList.add("open"); await sleep(1400);
-    for (let i = 1; i < tabs.length; i++) {
-      moveCursor(16.5, 8 + i * 5.2); await sleep(1300);
-      showTab(i); await sleep(1900);
+    panel.classList.add("open"); await sleep(1100);
+    pointAt(order[0]); await sleep(1500);
+    for (const tab of order.slice(1)) {
+      pointAt(tab); await sleep(1100);
+      showShot(tab); await sleep(2000);
     }
-    moveCursor(16.5, 8); await sleep(900); showTab(0); await sleep(1800);
-    moveCursor(70, 66); await sleep(450);
+    moveCursor(62, 72); await sleep(450);
     panel.classList.remove("open"); await sleep(2600);
   }
 }
+
+// The tour: one screenshot at a time, picked by the chips above it.
+const tourImgs = document.querySelectorAll(".screen img");
+const chips = document.querySelectorAll(".chips button");
+let tourTab = "shelf";
+function showCaption() {
+  document.getElementById("tour-cap").textContent = CAPTIONS[tourTab][lang === "en" ? 1 : 0];
+}
+function showTour(tab) {
+  tourTab = tab;
+  tourImgs.forEach(img => img.classList.toggle("on", img.dataset.shot === tab));
+  chips.forEach(b => { const on = b.dataset.shot === tab; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
+  showCaption();
+}
+chips.forEach(b => b.addEventListener("click", () => showTour(b.dataset.shot)));
 
 // Feedback goes to the same server as the downloads, where the author reads it.
 const FB_RU = { sending: "Отправляю…", ok: "Спасибо! Сообщение отправлено.", err: "Не удалось отправить. Попробуйте через минуту.", short: "Напишите хотя бы пару слов." };
