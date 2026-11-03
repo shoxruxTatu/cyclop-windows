@@ -7,8 +7,9 @@ internal static class Author
 {
     public const string Instagram = "@shoxrux.edit";
     public const string InstagramUrl = "https://www.instagram.com/shoxrux.edit/";
-    public const string CardBank = "TBC VISA";
-    public const string CardNumber = "4466 1369 5203 3117";
+    /// <summary>The donation page, on DonationAlerts.</summary>
+    public const string DonateUrl = "https://dalink.to/denkoozo";
+    public const string DonateLabel = "dalink.to/denkoozo";
 
     public const string OriginalAuthor = "Adil Kalikbergenov";
     public const string OriginalUrl = "https://github.com/akalikbergenov/cyclop";

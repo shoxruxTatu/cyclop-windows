@@ -1,8 +1,3 @@
-# Кнопка «Sponsor» в шапке репозитория. Ведёт на раздел «Поддержать автора»
-# в README — там номер карты.
+# Кнопка «Sponsor» в шапке репозитория — страница донатов на DonationAlerts.
 custom:
-  - "https://github.com/shoxruxTatu/cyclop-windows#%D0%BF%D0%BE%D0%B4%D0%B4%D0%B5%D1%80%D0%B6%D0%B0%D1%82%D1%8C-%D0%B0%D0%B2%D1%82%D0%BE%D1%80%D0%B0"
-
-# Когда GitHub одобрит профиль GitHub Sponsors (github.com/sponsors),
-# раскомментируйте строку ниже — появится ещё и родная кнопка GitHub.
-# github: shoxruxTatu
+  - "https://dalink.to/denkoozo"

@@ -12,8 +12,8 @@ Windows API.
 Windows-версию сделал **@shoxrux.edit** —
 [Instagram](https://www.instagram.com/shoxrux.edit/).
 
-Поддержать автора: **TBC VISA `4466 1369 5203 3117`**. Номер есть и в самой
-программе: Настройки → О программе, клик по строке копирует его.
+Поддержать автора: **[dalink.to/denkoozo](https://dalink.to/denkoozo)**
+(DonationAlerts). Ссылка есть и в самой программе: Настройки → О программе.
 
 Основано на [Cyclop для macOS](https://github.com/akalikbergenov/cyclop)
 Адиля Калыкбергенова (лицензия MIT).

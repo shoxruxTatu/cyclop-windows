@@ -130,15 +130,7 @@ internal sealed class SettingsPane : Pane
 
         Section(L10n.T("About"),
             LinkRow(Glyph.Person, L10n.T("Windows version"), Author.Instagram, row => Open(Author.InstagramUrl)),
-            LinkRow(Glyph.Heart, L10n.T("Support the author"), $"{Author.CardBank}  {Author.CardNumber}", row =>
-            {
-                // Digits only: what a banking app's transfer field accepts.
-                Ui.Copy(Author.CardNumber.Replace(" ", ""));
-                row.Text = L10n.T("Card number copied");
-                var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.6) };
-                timer.Tick += (_, _) => { timer.Stop(); row.Text = $"{Author.CardBank}  {Author.CardNumber}"; };
-                timer.Start();
-            }),
+            LinkRow(Glyph.Heart, L10n.T("Support the author"), Author.DonateLabel, row => Open(Author.DonateUrl)),
             LinkRow(Glyph.Globe, L10n.T("Based on Cyclop for macOS"), Author.OriginalAuthor, row => Open(Author.OriginalUrl)));
 
         Section("Cyclop", ActionRow(Glyph.Power, L10n.T("Quit Cyclop"), quit));
